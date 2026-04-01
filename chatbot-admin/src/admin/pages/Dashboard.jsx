@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useDashboard } from "../hooks/useDashboard";
+import TimeFilter from "../utils/TimeFilter";
 import DashboardLoading from "../components/DashboardLoading";
 import StatCard from "../components/StatCard";
 import ChartCard from "../components/ChartCard";
@@ -9,9 +10,8 @@ import KBAnalysis from "../components/KBAnalysis";
 import RefusedQuestions from "../components/RefusedQuestions";
 import ChatSessionHistory from "../components/ChatSessionHistory";
 import KeywordAnalytics from "../components/KeywordAnalytics";
-import TimeFilter from "../utils/TimeFilter";
 import Skeleton from "react-loading-skeleton";
-import { MessageSquare, UserCheck, AlertCircle, Zap, Menu } from "lucide-react";
+import { MessageSquare, UserCheck, AlertCircle, Zap } from "lucide-react";
 import {
   DailyTrendChart,
   RateLineChart,
@@ -21,17 +21,46 @@ import {
 } from "../chart/ChartSection";
 
 const Dashboard = () => {
+  // eslint-disable-next-line no-unused-vars
   const { toggleSidebar } = useOutletContext();
 
-  // Quản lý đồng thời Tab nhanh và Ngày chỉ định
-  const [timeFilter, setTimeFilter] = useState("all");
-  const [customDate, setCustomDate] = useState("");
+  // States quản lý lọc
+  const [filterMode, setFilterMode] = useState("all");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [range, setRange] = useState({ start: "", end: "" });
+  const [isFilterChanging, setIsFilterChanging] = useState(false);
 
-  // Logic: Nếu có ngày chỉ định thì ưu tiên dùng ngày đó làm filter, ngược lại dùng Tab
-  const activeFilter = customDate || timeFilter;
+  // Logic filter khớp trực tiếp với API Backend mới
+  const activeFilter = useMemo(() => {
+    if (filterMode === "all") return "all";
+    if (filterMode === "today") return { days: 1 };
+
+    if (filterMode === "month" && selectedMonth) {
+      const [year, month] = selectedMonth.split("-");
+      return { year: parseInt(year), month: parseInt(month) };
+    }
+
+    if (filterMode === "range" && range.start && range.end) {
+      return { start_date: range.start, end_date: range.end };
+    }
+
+    return "all";
+  }, [filterMode, selectedMonth, range]);
+
   const { data, loading } = useDashboard(activeFilter);
 
-  // Memoize KPI cards
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsFilterChanging(true);
+  }, [activeFilter]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!loading) setIsFilterChanging(false);
+  }, [loading]);
+
+  const showSkeleton = loading || isFilterChanging || !data.kpis;
+
   const kpiCards = useMemo(() => {
     const k = data.kpis?.kpis || {};
     return [
@@ -42,7 +71,7 @@ const Dashboard = () => {
         deltaIcon: <MessageSquare size={10} />,
         type: "default",
         description:
-          "Quy mô tương tác thực tế: Tổng hợp tất cả các cuộc hội thoại.",
+          "Quy mô tương tác thực tế: Tổng hợp tất cả các cuộc hội thoại và số lượng câu hỏi/trả lời mà hệ thống đã xử lý.",
       },
       {
         label: "Lượt trả lời",
@@ -51,7 +80,7 @@ const Dashboard = () => {
         deltaIcon: <UserCheck size={10} />,
         type: "success",
         description:
-          "Hiệu quả giải đáp: Số lượng câu hỏi Bot đã nhận diện chính xác.",
+          "Hiệu quả giải đáp: Số lượng câu hỏi mà Bot đã nhận diện chính xác và cung cấp thông tin hữu ích.",
       },
       {
         label: "Lượt từ chối",
@@ -60,14 +89,15 @@ const Dashboard = () => {
         deltaIcon: <AlertCircle size={10} />,
         type: "danger",
         description:
-          "Lỗ hổng kiến thức: Các trường hợp Bot chưa có dữ liệu trả lời.",
+          "Lỗ hổng kiến thức: Các trường hợp Bot chưa có dữ liệu trả lời hoặc không hiểu ý định.",
       },
       {
         label: "Tỉ lệ trả lời",
         value: `${k.answer_rate || 0}%`,
         delta: `${k.trend_rate || 0}%`,
         type: k.answer_rate >= 80 ? "success" : "warning",
-        description: "Chỉ số năng lực: Đánh giá mức độ bao phủ của Bot.",
+        description:
+          "Chỉ số năng lực: Đánh giá mức độ bao phủ của Bot so với nhu cầu thực tế.",
       },
       {
         label: "Thời gian TB",
@@ -76,7 +106,7 @@ const Dashboard = () => {
         deltaIcon: <Zap size={10} />,
         type: "default",
         description:
-          "Chất lượng trải nghiệm: Đo lường độ sâu của cuộc hội thoại.",
+          "Chất lượng trải nghiệm: Đo lường độ sâu của cuộc hội thoại qua thời gian kết nối.",
       },
     ];
   }, [data.kpis]);
@@ -84,53 +114,35 @@ const Dashboard = () => {
   if (loading && !data.kpis) return <DashboardLoading />;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 md:p-10 transition-all duration-300">
+    <div className="min-h-screen bg-[#f8fafc] p-6 md:p-10 font-sans">
       <div className="max-w-[1600px] mx-auto space-y-8">
-        {/* MOBILE HEADER */}
-        <div className="lg:hidden flex items-center gap-4 mb-2">
-          <button
-            onClick={toggleSidebar}
-            className="p-2 bg-white border border-slate-200 rounded-xl shadow-sm"
-          >
-            <Menu size={24} />
-          </button>
-          <span className="font-bold text-slate-700 uppercase text-xs tracking-widest">
-            Trạng Nguyên AI
-          </span>
-        </div>
-
-        {/* HEADER & FILTER SECTION */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end pb-8 gap-4 border-b border-slate-100">
+        <header className="flex flex-col xl:flex-row justify-between items-start xl:items-end pb-8 gap-6 border-b border-slate-100">
           <div>
             <h1 className="text-4xl font-extrabold text-slate-900 uppercase tracking-tighter">
               DASHBOARD
             </h1>
-            <p className="text-slate-500 mt-2 font-medium">
-              {customDate
-                ? `Đang xem dữ liệu ngày: ${new Date(customDate).toLocaleDateString("vi-VN")}`
-                : "Hệ thống phân tích Trạng Nguyên AI"}
+            <p className="text-slate-500 mt-2 font-medium uppercase text-xs tracking-wider">
+              {filterMode === "range" && range.start && range.end
+                ? `Khoảng: ${range.start} ➔ ${range.end}`
+                : "Hệ thống phân tích dữ liệu Trạng Nguyên AI"}
             </p>
           </div>
 
-          {/* Tích hợp TimeFilter mới */}
+          {/* Component lọc đã tách riêng */}
           <TimeFilter
-            activeTab={timeFilter}
-            onTabChange={(tab) => {
-              setTimeFilter(tab);
-              setCustomDate(""); // Reset ngày khi chọn tab nhanh
-            }}
-            customDate={customDate}
-            onDateChange={(date) => {
-              setCustomDate(date);
-              if (date) setTimeFilter(""); // Bỏ active tab nếu đang chọn ngày
-            }}
+            filterMode={filterMode}
+            setFilterMode={setFilterMode}
+            selectedMonth={selectedMonth} // THÊM DÒNG NÀY
+            setSelectedMonth={setSelectedMonth}
+            range={range} // THÊM DÒNG NÀY
+            setRange={setRange}
           />
         </header>
 
-        {/* Cấu trúc các Section bên dưới giữ nguyên 100% UI cũ */}
         <div className="space-y-10">
+          {/* STAT CARDS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-            {!data.kpis
+            {showSkeleton
               ? Array(5)
                   .fill(0)
                   .map((_, i) => <StatCard key={i} loading={true} />)
@@ -139,16 +151,17 @@ const Dashboard = () => {
                 ))}
           </div>
 
+          {/* CHARTS SECTION 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <ChartCard title="Xu hướng hỏi đáp" iconColor="bg-blue-500">
-              {!data.kpis ? (
+              {showSkeleton ? (
                 <Skeleton height={300} borderRadius={12} />
               ) : (
                 <DailyTrendChart data={data.kpis.daily || []} />
               )}
             </ChartCard>
             <ChartCard title="Hiệu suất trả lời" iconColor="bg-indigo-500">
-              {!data.kpis ? (
+              {showSkeleton ? (
                 <Skeleton height={300} borderRadius={12} />
               ) : (
                 <RateLineChart data={data.kpis.daily || []} />
@@ -156,10 +169,11 @@ const Dashboard = () => {
             </ChartCard>
           </div>
 
+          {/* CHARTS SECTION 2 */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <ChartCard title="Giờ cao điểm (VN)" iconColor="bg-orange-500">
-                {!data.kpis ? (
+                {showSkeleton ? (
                   <Skeleton height={300} borderRadius={12} />
                 ) : (
                   <PeakHourApexChart data={data.kpis.hours || []} />
@@ -167,7 +181,7 @@ const Dashboard = () => {
               </ChartCard>
             </div>
             <ChartCard title="Tỉ lệ phản hồi" iconColor="bg-emerald-500">
-              {!data.kpis ? (
+              {showSkeleton ? (
                 <div className="flex justify-center items-center h-[300px]">
                   <Skeleton circle height={200} width={200} />
                 </div>
@@ -180,23 +194,25 @@ const Dashboard = () => {
             </ChartCard>
           </div>
 
+          {/* KB & FAQ ANALYSIS */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {!data.faqAnalysis ? (
+            {showSkeleton ? (
               <div className="col-span-3">
                 <Skeleton height={350} borderRadius={16} />
               </div>
             ) : (
               <>
                 <KBAnalysis data={data.faqAnalysis} />
-                <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-100">
+                <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
                   <PeakHourChart data={data.faqAnalysis.daily || []} />
                 </div>
               </>
             )}
           </div>
 
+          {/* STATISTICS & KEYWORDS */}
           <div className="space-y-10">
-            {!data.userData ? (
+            {showSkeleton ? (
               <div className="bg-white p-6 rounded-xl border">
                 <Skeleton height={250} />
               </div>
@@ -206,7 +222,7 @@ const Dashboard = () => {
                 totalSessionsAll={data.kpis?.kpis?.total_sessions || 0}
               />
             )}
-            {!data.keywords ? (
+            {showSkeleton ? (
               <div className="bg-white p-6 rounded-xl border">
                 <Skeleton height={200} />
               </div>
@@ -215,15 +231,16 @@ const Dashboard = () => {
             )}
           </div>
 
+          {/* HISTORY & REFUSED */}
           <div className="space-y-10">
-            {!data.faqAnalysis ? (
+            {showSkeleton ? (
               <div className="bg-white p-6 rounded-xl border">
                 <Skeleton height={200} />
               </div>
             ) : (
               <RefusedQuestions questions={data.faqAnalysis.missing || []} />
             )}
-            {!data.sessions ? (
+            {showSkeleton ? (
               <div className="bg-white p-6 rounded-xl border">
                 <Skeleton height={400} />
               </div>
@@ -233,19 +250,15 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <Footer />
+        <footer className="flex justify-between items-center text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] pt-8">
+          <span>Trạng Nguyên AI System © 2026</span>
+          <span className="bg-slate-100 px-4 py-1.5 rounded-full shadow-inner">
+            v2.5.0
+          </span>
+        </footer>
       </div>
     </div>
   );
 };
-
-const Footer = () => (
-  <footer className="flex justify-between items-center text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] pt-8">
-    <span>Trạng Nguyên AI System © 2026</span>
-    <span className="bg-slate-100 px-4 py-1.5 rounded-full shadow-inner">
-      v2.4.0
-    </span>
-  </footer>
-);
 
 export default Dashboard;

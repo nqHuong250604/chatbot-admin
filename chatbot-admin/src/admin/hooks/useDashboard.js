@@ -13,18 +13,23 @@ export const useDashboard = (filter = "all") => {
   const [loading, setLoading] = useState(true);
   const isMounted = useRef(true);
 
-  // Hàm helper để fetch từng phần dữ liệu
+  // Stringify filter để useEffect/useCallback có thể theo dõi sự thay đổi của Object
+  const filterKey =
+    typeof filter === "object" ? JSON.stringify(filter) : filter;
+
   const fetchSection = useCallback(
     async (key, fetchFn, transformFn) => {
       try {
         let res = await fetchFn(filter);
 
         // Logic Fallback: Nếu dữ liệu theo filter rỗng, lấy All-time
+        // Lưu ý: filter !== "all" giờ bao gồm cả check Object rỗng
         const isEmpty =
           !res ||
           (res.kpis && res.kpis.total_sessions === 0) ||
           (Array.isArray(res) && res.length === 0);
-        if (isEmpty && filter !== "all") {
+
+        if (isEmpty && filter !== "all" && filterKey !== "{}") {
           res = await fetchFn("all");
         }
 
@@ -38,33 +43,38 @@ export const useDashboard = (filter = "all") => {
         console.error(`Lỗi load ${key}:`, err);
       }
     },
-    [filter],
+    [filter, filterKey], // Theo dõi cả giá trị filter và key string của nó
   );
 
   useEffect(() => {
     isMounted.current = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
-    fetchSection("kpis", dashboardService.getSummary);
-    fetchSection("faqAnalysis", dashboardService.getFAQAnalysis);
-    fetchSection("keywords", dashboardService.getKeywords);
+    // Thực hiện fetch đồng thời các section
+    const loadAllData = async () => {
+      await Promise.all([
+        fetchSection("kpis", dashboardService.getSummary),
+        fetchSection("faqAnalysis", dashboardService.getFAQAnalysis),
+        fetchSection("keywords", dashboardService.getKeywords),
+        fetchSection("userData", dashboardService.getUsers, (res) =>
+          Array.isArray(res) ? res : res?.data || [],
+        ),
+        fetchSection("sessions", dashboardService.getSessions, (res) =>
+          Array.isArray(res) ? res : res?.data || [],
+        ),
+      ]);
 
-    fetchSection("userData", dashboardService.getUsers, (res) =>
-      Array.isArray(res) ? res : res?.data || [],
-    );
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    };
 
-    fetchSection("sessions", dashboardService.getSessions, (res) =>
-      Array.isArray(res) ? res : res?.data || [],
-    );
-
-    const timer = setTimeout(() => setLoading(false), 200);
+    loadAllData();
 
     return () => {
       isMounted.current = false;
-      clearTimeout(timer);
     };
-  }, [filter, fetchSection]);
+  }, [filterKey, fetchSection]); // Chỉ trigger lại khi filter thay đổi thực sự
 
   return { data, loading };
 };

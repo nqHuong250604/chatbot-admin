@@ -15,11 +15,12 @@ Docs: http://localhost:8000/docs
 from __future__ import annotations
 
 import os
-from dotenv import load_dotenv
+from calendar import monthrange
 from datetime import date, datetime
 from typing import Optional
 
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client
@@ -39,9 +40,9 @@ from analytics import (
     get_kpis,
 )
 
+# ── App ───────────────────────────────────────────────────────
 load_dotenv()
 
-# ── App ───────────────────────────────────────────────────────
 app = FastAPI(
     title="Trạng Nguyên AI — Dashboard API",
     description="API cung cấp dữ liệu thống kê chatbot nội bộ cho Frontend",
@@ -86,8 +87,49 @@ def safe_records(df) -> list:
     return d.to_dict(orient="records")
 
 
-def load_and_filter(days: Optional[int] = None):
+def filter_params(
+    days_description: str = "Lọc N ngày gần nhất",
+    include_pagination: bool = False,
+):
+    params = {
+        "days": Query(None, description=days_description),
+        "selected_date": Query(None, description="Lọc đúng 1 ngày theo định dạng YYYY-MM-DD"),
+        "start_date": Query(None, description="Lọc từ ngày nào, định dạng YYYY-MM-DD"),
+        "end_date": Query(None, description="Lọc đến ngày nào, định dạng YYYY-MM-DD"),
+        "year": Query(None, ge=2000, le=2100, description="Năm cần lọc, ví dụ 2026"),
+        "month": Query(None, ge=1, le=12, description="Tháng cần lọc, từ 1 đến 12"),
+    }
+    if include_pagination:
+        params["limit"] = Query(100, description="Giới hạn số phiên trả về (mặc định 100)")
+        params["page"] = Query(1, description="Trang (bắt đầu từ 1)")
+    return params
+
+
+def load_and_filter(
+    days: Optional[int] = None,
+    selected_date: Optional[date] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+):
     """Fetch data từ Supabase, build DataFrames, filter theo ngày nếu có."""
+    if month is not None and year is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Khi dùng month, cần truyền thêm year",
+        )
+    if (start_date is None) != (end_date is None):
+        raise HTTPException(
+            status_code=400,
+            detail="Cần truyền đồng thời cả start_date và end_date",
+        )
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(
+            status_code=400,
+            detail="start_date không được lớn hơn end_date",
+        )
+
     df = fetch_raw(get_client())
     if df.empty:
         empty = pd.DataFrame()
@@ -100,22 +142,66 @@ def load_and_filter(days: Optional[int] = None):
     faq       = build_faq_pairs(df)
     daily_faq = build_daily_from_faq(faq)
 
-    if days:
+    def filter_by_date(dataframe: pd.DataFrame, target_date: date, col: str = "date_vn"):
+        if dataframe.empty:
+            return dataframe
+        return dataframe[pd.to_datetime(dataframe[col]).dt.date == target_date]
+
+    def filter_from_date(dataframe: pd.DataFrame, cutoff: date, col: str = "date_vn"):
+        if dataframe.empty:
+            return dataframe
+        return dataframe[pd.to_datetime(dataframe[col]).dt.date >= cutoff]
+
+    def filter_between_dates(
+        dataframe: pd.DataFrame,
+        start_date: date,
+        end_date: date,
+        col: str = "date_vn",
+    ):
+        if dataframe.empty:
+            return dataframe
+        dates = pd.to_datetime(dataframe[col]).dt.date
+        return dataframe[(dates >= start_date) & (dates <= end_date)]
+
+    if selected_date:
+        sess      = filter_by_date(sess, selected_date)
+        daily     = filter_by_date(daily, selected_date)
+        qa        = filter_by_date(qa, selected_date)
+        daily_qa  = filter_by_date(daily_qa, selected_date)
+        faq       = filter_by_date(faq, selected_date)
+        daily_faq = filter_by_date(daily_faq, selected_date)
+        df_f      = filter_by_date(df, selected_date)
+    elif start_date and end_date:
+        sess      = filter_between_dates(sess, start_date, end_date)
+        daily     = filter_between_dates(daily, start_date, end_date)
+        qa        = filter_between_dates(qa, start_date, end_date)
+        daily_qa  = filter_between_dates(daily_qa, start_date, end_date)
+        faq       = filter_between_dates(faq, start_date, end_date)
+        daily_faq = filter_between_dates(daily_faq, start_date, end_date)
+        df_f      = filter_between_dates(df, start_date, end_date)
+    elif year and month:
+        month_start = date(year, month, 1)
+        month_end = date(year, month, monthrange(year, month)[1])
+        sess      = filter_between_dates(sess, month_start, month_end)
+        daily     = filter_between_dates(daily, month_start, month_end)
+        qa        = filter_between_dates(qa, month_start, month_end)
+        daily_qa  = filter_between_dates(daily_qa, month_start, month_end)
+        faq       = filter_between_dates(faq, month_start, month_end)
+        daily_faq = filter_between_dates(daily_faq, month_start, month_end)
+        df_f      = filter_between_dates(df, month_start, month_end)
+    elif days:
         cutoff = (
             pd.Timestamp.now(tz="Asia/Ho_Chi_Minh").normalize()
             - pd.Timedelta(days=days - 1)
         ).date()
 
-        def f(d, col="date_vn"):
-            return d[pd.to_datetime(d[col]).dt.date >= cutoff] if not d.empty else d
-
-        sess      = f(sess)
-        daily     = f(daily)
-        qa        = f(qa)
-        daily_qa  = f(daily_qa)
-        faq       = f(faq)
-        daily_faq = f(daily_faq)
-        df_f      = df[df["date_vn"] >= cutoff]
+        sess      = filter_from_date(sess, cutoff)
+        daily     = filter_from_date(daily, cutoff)
+        qa        = filter_from_date(qa, cutoff)
+        daily_qa  = filter_from_date(daily_qa, cutoff)
+        faq       = filter_from_date(faq, cutoff)
+        daily_faq = filter_from_date(daily_faq, cutoff)
+        df_f      = filter_from_date(df, cutoff)
     else:
         df_f = df
 
@@ -153,7 +239,12 @@ def health():
 
 @app.get("/api/kpis", tags=["Tổng quan"])
 def api_kpis(
-    days: Optional[int] = Query(None, description="Lọc N ngày gần nhất. Bỏ trống = tất cả")
+    days: Optional[int] = filter_params("Lọc N ngày gần nhất. Bỏ trống = tất cả")["days"],
+    selected_date: Optional[date] = filter_params()["selected_date"],
+    start_date: Optional[date] = filter_params()["start_date"],
+    end_date: Optional[date] = filter_params()["end_date"],
+    year: Optional[int] = filter_params()["year"],
+    month: Optional[int] = filter_params()["month"],
 ):
     """
     Các chỉ số tổng quan (KPI).
@@ -169,13 +260,25 @@ def api_kpis(
     - `trend_sessions` — Thay đổi số phiên so với tuần trước
     - `trend_rate` — Thay đổi tỉ lệ trả lời so với tuần trước (%)
     """
-    df_f, sess, _, qa, _, _, _ = load_and_filter(days)
+    df_f, sess, _, qa, _, _, _ = load_and_filter(
+        days=days,
+        selected_date=selected_date,
+        start_date=start_date,
+        end_date=end_date,
+        year=year,
+        month=month,
+    )
     return get_kpis(sess, qa)
 
 
 @app.get("/api/summary", tags=["Tổng quan"])
 def api_summary(
-    days: Optional[int] = Query(None, description="Lọc N ngày gần nhất. Bỏ trống = tất cả")
+    days: Optional[int] = filter_params("Lọc N ngày gần nhất. Bỏ trống = tất cả")["days"],
+    selected_date: Optional[date] = filter_params()["selected_date"],
+    start_date: Optional[date] = filter_params()["start_date"],
+    end_date: Optional[date] = filter_params()["end_date"],
+    year: Optional[int] = filter_params()["year"],
+    month: Optional[int] = filter_params()["month"],
 ):
     """
     Toàn bộ dữ liệu dashboard trong 1 request duy nhất.
@@ -189,7 +292,14 @@ def api_summary(
     - `keywords` — Top 10 từ khóa
     - `user_count` — Số user đã xác thực
     """
-    df_f, sess, _, qa, daily_qa, faq, _ = load_and_filter(days)
+    df_f, sess, _, qa, daily_qa, faq, _ = load_and_filter(
+        days=days,
+        selected_date=selected_date,
+        start_date=start_date,
+        end_date=end_date,
+        year=year,
+        month=month,
+    )
 
     kpis              = get_kpis(sess, qa)
     hour_df           = build_hour_dist(sess)
@@ -218,7 +328,12 @@ def api_summary(
 
 @app.get("/api/daily", tags=["Xu hướng"])
 def api_daily(
-    days: Optional[int] = Query(None, description="Lọc N ngày gần nhất")
+    days: Optional[int] = filter_params()["days"],
+    selected_date: Optional[date] = filter_params()["selected_date"],
+    start_date: Optional[date] = filter_params()["start_date"],
+    end_date: Optional[date] = filter_params()["end_date"],
+    year: Optional[int] = filter_params()["year"],
+    month: Optional[int] = filter_params()["month"],
 ):
     """
     Thống kê theo ngày (đơn vị: lượt hỏi-đáp).
@@ -231,13 +346,25 @@ def api_daily(
     - `answer_rate` — Tỉ lệ trả lời (%)
     - `unique_sessions` — Số phiên trong ngày
     """
-    _, _, _, _, daily_qa, _, _ = load_and_filter(days)
+    _, _, _, _, daily_qa, _, _ = load_and_filter(
+        days=days,
+        selected_date=selected_date,
+        start_date=start_date,
+        end_date=end_date,
+        year=year,
+        month=month,
+    )
     return {"data": safe_records(daily_qa), "total": len(daily_qa)}
 
 
 @app.get("/api/hours", tags=["Xu hướng"])
 def api_hours(
-    days: Optional[int] = Query(None, description="Lọc N ngày gần nhất")
+    days: Optional[int] = filter_params()["days"],
+    selected_date: Optional[date] = filter_params()["selected_date"],
+    start_date: Optional[date] = filter_params()["start_date"],
+    end_date: Optional[date] = filter_params()["end_date"],
+    year: Optional[int] = filter_params()["year"],
+    month: Optional[int] = filter_params()["month"],
 ):
     """
     Phân bố phiên chat theo giờ trong ngày (giờ VN — UTC+7).
@@ -247,7 +374,14 @@ def api_hours(
     - `n_sessions` — Số phiên trong giờ đó
     - `is_peak` — true nếu là giờ cao điểm
     """
-    _, sess, _, _, _, _, _ = load_and_filter(days)
+    _, sess, _, _, _, _, _ = load_and_filter(
+        days=days,
+        selected_date=selected_date,
+        start_date=start_date,
+        end_date=end_date,
+        year=year,
+        month=month,
+    )
     return {"data": safe_records(build_hour_dist(sess))}
 
 
@@ -257,7 +391,12 @@ def api_hours(
 
 @app.get("/api/faq", tags=["KB FAQ"])
 def api_faq(
-    days: Optional[int] = Query(None, description="Lọc N ngày gần nhất")
+    days: Optional[int] = filter_params()["days"],
+    selected_date: Optional[date] = filter_params()["selected_date"],
+    start_date: Optional[date] = filter_params()["start_date"],
+    end_date: Optional[date] = filter_params()["end_date"],
+    year: Optional[int] = filter_params()["year"],
+    month: Optional[int] = filter_params()["month"],
 ):
     """
     Phân tích độ hoàn thiện kho tri thức FAQ.
@@ -271,7 +410,14 @@ def api_faq(
     - `daily` — Thống kê theo ngày
     - `missing` — Danh sách câu hỏi KB chưa có dữ liệu (cần bổ sung)
     """
-    _, _, _, _, _, faq, daily_faq = load_and_filter(days)
+    _, _, _, _, _, faq, daily_faq = load_and_filter(
+        days=days,
+        selected_date=selected_date,
+        start_date=start_date,
+        end_date=end_date,
+        year=year,
+        month=month,
+    )
 
     if faq.empty:
         return {
@@ -302,9 +448,14 @@ def api_faq(
 
 @app.get("/api/sessions", tags=["Phiên chat"])
 def api_sessions(
-    days : Optional[int] = Query(None, description="Lọc N ngày gần nhất"),
-    limit: int           = Query(100,  description="Giới hạn số phiên trả về (mặc định 100)"),
-    page : int           = Query(1,    description="Trang (bắt đầu từ 1)"),
+    days         : Optional[int]  = filter_params(include_pagination=True)["days"],
+    selected_date: Optional[date] = filter_params()["selected_date"],
+    start_date   : Optional[date] = filter_params()["start_date"],
+    end_date     : Optional[date] = filter_params()["end_date"],
+    year         : Optional[int]  = filter_params()["year"],
+    month        : Optional[int]  = filter_params()["month"],
+    limit        : int            = filter_params(include_pagination=True)["limit"],
+    page         : int            = filter_params(include_pagination=True)["page"],
 ):
     """
     Danh sách chi tiết các phiên chat, hỗ trợ phân trang.
@@ -318,7 +469,14 @@ def api_sessions(
     - `duration_min` — Thời gian phiên (phút)
     - `bot_answered` — true/false
     """
-    _, sess, _, _, _, _, _ = load_and_filter(days)
+    _, sess, _, _, _, _, _ = load_and_filter(
+        days=days,
+        selected_date=selected_date,
+        start_date=start_date,
+        end_date=end_date,
+        year=year,
+        month=month,
+    )
     if sess.empty:
         return {"data": [], "total": 0, "page": page, "limit": limit}
 
@@ -339,8 +497,13 @@ def api_sessions(
 
 @app.get("/api/keywords", tags=["Từ khóa"])
 def api_keywords(
-    days: Optional[int] = Query(None, description="Lọc N ngày gần nhất"),
-    top : int           = Query(15,   description="Số từ khóa trả về (mặc định 15)"),
+    days         : Optional[int]  = filter_params()["days"],
+    selected_date: Optional[date] = filter_params()["selected_date"],
+    start_date   : Optional[date] = filter_params()["start_date"],
+    end_date     : Optional[date] = filter_params()["end_date"],
+    year         : Optional[int]  = filter_params()["year"],
+    month        : Optional[int]  = filter_params()["month"],
+    top          : int            = Query(15,   description="Số từ khóa trả về (mặc định 15)"),
 ):
     """
     Từ khóa và cụm từ được hỏi nhiều nhất từ câu hỏi của người dùng.
@@ -349,7 +512,14 @@ def api_keywords(
     - `words` — Top từ đơn: `[{keyword, count}]`
     - `bigrams` — Top cụm 2 từ: `[{keyword, count}]`
     """
-    df_f, _, _, _, _, _, _ = load_and_filter(days)
+    df_f, _, _, _, _, _, _ = load_and_filter(
+        days=days,
+        selected_date=selected_date,
+        start_date=start_date,
+        end_date=end_date,
+        year=year,
+        month=month,
+    )
     word_df, bigram_df = build_keywords(df_f, top_n=top)
     return {
         "words"  : safe_records(word_df),
@@ -363,7 +533,12 @@ def api_keywords(
 
 @app.get("/api/users", tags=["Người dùng"])
 def api_users(
-    days: Optional[int] = Query(None, description="Lọc N ngày gần nhất")
+    days: Optional[int] = filter_params()["days"],
+    selected_date: Optional[date] = filter_params()["selected_date"],
+    start_date: Optional[date] = filter_params()["start_date"],
+    end_date: Optional[date] = filter_params()["end_date"],
+    year: Optional[int] = filter_params()["year"],
+    month: Optional[int] = filter_params()["month"],
 ):
     """
     Thống kê mức độ sử dụng theo từng người dùng đã xác thực.
@@ -384,7 +559,14 @@ def api_users(
     - `first_seen` — Ngày đầu tiên sử dụng
     - `last_seen` — Ngày gần nhất sử dụng
     """
-    df_f, _, _, _, _, _, _ = load_and_filter(days)
+    df_f, _, _, _, _, _, _ = load_and_filter(
+        days=days,
+        selected_date=selected_date,
+        start_date=start_date,
+        end_date=end_date,
+        year=year,
+        month=month,
+    )
     user_df = build_user_stats(df_f, client=get_client())
     if user_df.empty:
         return {"data": [], "total": 0}
