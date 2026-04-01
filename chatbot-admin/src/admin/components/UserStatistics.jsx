@@ -271,6 +271,7 @@ const UserStatistics = ({ userData = [] }) => {
           <thead>
             <tr className="text-[10px] text-slate-400 uppercase bg-slate-50/80">
               <th className="p-4 font-bold">Họ tên</th>
+              <th className="p-4 font-bold text-center">Email</th>
               <th className="p-4 font-bold text-center">Mã bí mật</th>
               <th className="p-4 font-bold text-center">Phòng ban</th>
               <th className="p-4 font-bold text-center">Role</th>
@@ -291,6 +292,9 @@ const UserStatistics = ({ userData = [] }) => {
               >
                 <td className="p-4 font-bold text-slate-800">
                   {user.full_name}
+                </td>
+                <td className="p-4 text-center font-mono text-indigo-500 font-bold">
+                  {user.email || "N/A"}
                 </td>
                 <td className="p-4 text-center font-mono text-indigo-500 font-bold">
                   {user.secret_code || "********"}
