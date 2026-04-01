@@ -293,9 +293,7 @@ const UserStatistics = ({ userData = [] }) => {
                 <td className="p-4 font-bold text-slate-800">
                   {user.full_name}
                 </td>
-                <td className="p-4 text-center font-mono text-indigo-500 font-bold">
-                  {user.email || "N/A"}
-                </td>
+                <td className="p-4 text-center">{user.email || "N/A"}</td>
                 <td className="p-4 text-center font-mono text-indigo-500 font-bold">
                   {user.secret_code || "********"}
                 </td>
