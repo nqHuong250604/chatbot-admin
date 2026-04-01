@@ -63,7 +63,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           {(!shouldHideText || !isDesktop) && (
             <button
               onClick={handleToggleAction}
-              className="absolute top-2 right-2 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-300"
+              className="absolute top-2 right-2 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-300 cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -85,7 +85,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           {shouldHideText && (
             <button
               onClick={handleToggleAction}
-              className="p-3 text-slate-500 hover:bg-slate-100 rounded-2xl transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 shrink-0"
+              className="p-3 text-slate-500 hover:bg-slate-100 rounded-2xl transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 shrink-0 cursor-pointer"
             >
               <Menu size={28} />
             </button>
