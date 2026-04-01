@@ -18,6 +18,10 @@ function App() {
         {/* Cấu trúc Route Admin */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<Dashboard />} />
+          <Route
+            path="knowledge-base"
+            element={<div>Knowledge Base Page</div>}
+          />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>

@@ -8,6 +8,7 @@ import {
   Menu,
   MessageSquare,
   History,
+  Database,
 } from "lucide-react";
 import logo from "../../assets/logo.svg";
 
@@ -104,6 +105,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 className={`transition-all duration-300 ${shouldHideText ? "opacity-0 invisible w-0" : "opacity-100 visible"}`}
               >
                 Dashboard
+              </span>
+            </NavLink>
+            <NavLink
+              to="/admin/knowledge-base" // Đường dẫn này bạn tự định nghĩa trong App.js
+              className={activeStyle}
+              onClick={() => !isDesktop && toggleSidebar()}
+            >
+              <Database size={22} className="shrink-0" />
+              <span
+                className={`transition-all duration-300 ${shouldHideText ? "opacity-0 invisible w-0" : "opacity-100 visible"}`}
+              >
+                Nhập liệu tri thức
               </span>
             </NavLink>
           </div>
