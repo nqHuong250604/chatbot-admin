@@ -71,7 +71,7 @@ const Dashboard = () => {
         deltaIcon: <MessageSquare size={10} />,
         type: "default",
         description:
-          "Quy mô tương tác thực tế: Tổng hợp tất cả các cuộc hội thoại và số lượng câu hỏi/trả lời mà hệ thống đã xử lý.",
+          "Tổng số cuộc hội thoại và tin nhắn Bot đã xử lý với người dùng.",
       },
       {
         label: "Lượt trả lời",
@@ -80,7 +80,7 @@ const Dashboard = () => {
         deltaIcon: <UserCheck size={10} />,
         type: "success",
         description:
-          "Hiệu quả giải đáp: Số lượng câu hỏi mà Bot đã nhận diện chính xác và cung cấp thông tin hữu ích.",
+          "Số câu hỏi Bot đã tìm thấy thông tin và trả lời khớp với ý định người dùng.",
       },
       {
         label: "Lượt từ chối",
@@ -89,7 +89,7 @@ const Dashboard = () => {
         deltaIcon: <AlertCircle size={10} />,
         type: "danger",
         description:
-          "Lỗ hổng kiến thức: Các trường hợp Bot chưa có dữ liệu trả lời hoặc không hiểu ý định.",
+          "Số câu hỏi Bot từ chối trả lời do thông tin chưa được cập nhật vào kho tri thức.",
       },
       {
         label: "Tỉ lệ trả lời",
@@ -97,7 +97,7 @@ const Dashboard = () => {
         delta: `${k.trend_rate || 0}%`,
         type: k.answer_rate >= 80 ? "success" : "warning",
         description:
-          "Chỉ số năng lực: Đánh giá mức độ bao phủ của Bot so với nhu cầu thực tế.",
+          "Chỉ số đánh giá mức độ bao phủ của dữ liệu tri thức so với nhu cầu thực tế.",
       },
       {
         label: "Thời gian TB",
@@ -106,7 +106,7 @@ const Dashboard = () => {
         deltaIcon: <Zap size={10} />,
         type: "default",
         description:
-          "Chất lượng trải nghiệm: Đo lường độ sâu của cuộc hội thoại qua thời gian kết nối.",
+          "Thời gian trung bình của một phiên tư vấn giữa Bot và khách hàng.",
       },
     ];
   }, [data.kpis]);

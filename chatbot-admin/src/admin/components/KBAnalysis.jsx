@@ -118,28 +118,30 @@ const KBAnalysis = ({ data }) => {
           value={summary.total}
           barColor="bg-slate-400"
           icon={<ListOrdered size={14} className="text-slate-500" />}
-          description="Tổng số lần hệ thống thực hiện truy vấn vào kho tri thức FAQ."
+          description="Tổng số lần Bot thực hiện tìm kiếm câu trả lời trong kho tri thức FAQ."
         />
+
         <MiniStat
           label="KB có dữ liệu"
           value={summary.has_data}
           barColor="bg-emerald-500"
           icon={<FileCheck size={14} className="text-emerald-600" />}
-          description="Số lượng truy vấn tìm thấy nội dung phản hồi đầy đủ."
+          description="Số câu hỏi đã tìm thấy nội dung phản hồi sẵn có trong kho dữ liệu."
         />
+
         <MiniStat
           label="KB thiếu dữ liệu"
           value={summary.missing_data}
           barColor="bg-rose-500"
           icon={<FileX size={14} className="text-rose-600" />}
-          description="Số lượng câu hỏi chưa được biên soạn nội dung trả lời."
+          description="Số câu hỏi chưa được biên soạn nội dung, cần bổ sung thêm tri thức."
         />
         <MiniStat
           label="Lỗi kết nối"
           value={`${summary.err}`}
           barColor="bg-amber-500"
           icon={<AlertTriangle size={14} className="text-amber-600" />}
-          description="Tỉ lệ phần trăm các câu hỏi FAQ đã có dữ liệu trả lời sẵn sàng."
+          description="Số phiên hội thoại bị gián đoạn hoặc gặp sự cố kỹ thuật từ hệ thống."
         />
       </section>
 

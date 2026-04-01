@@ -233,31 +233,34 @@ const UserStatistics = ({ userData = [] }) => {
           unit="người"
           barColor="bg-slate-400"
           icon={<Users size={14} className="text-slate-500" />}
-          description="Tổng số nhân sự đã đăng nhập."
+          description="Tổng số nhân viên trong hệ thống đã đăng nhập và sử dụng Bot."
         />
+
         <MiniStat
-          label="PHIÊN XÁC ĐỊNH"
+          label="PHIÊN ĐỊNH DANH"
           value={stats.verified || 0}
           unit="phiên"
           barColor="bg-emerald-500"
           icon={<UserCheck size={14} className="text-emerald-600" />}
-          description="Số lượng phiên chat định danh."
+          description="Số cuộc trò chuyện từ người dùng đã đăng nhập tài khoản."
         />
+
         <MiniStat
-          label="PHIÊN CHƯA XÁC ĐỊNH"
+          label="PHIÊN VÃNG LAI"
           value="0"
-          unit="vãng lai"
+          unit="khách"
           barColor="bg-rose-500"
           icon={<Ghost size={14} className="text-rose-600" />}
-          description="Các phiên chat vãng lai."
+          description="Số cuộc trò chuyện từ người dùng ẩn danh hoặc chưa đăng nhập."
         />
+
         <MiniStat
-          label="DÙNG NHIỀU NHẤT"
+          label="USER DÙNG NHIỀU NHẤT"
           value={stats.top?.full_name || "N/A"}
-          unit="Top User"
+          unit="Top 1"
           barColor="bg-blue-500"
           icon={<Award size={14} className="text-blue-600" />}
-          description="Người dùng tích cực nhất."
+          description="Thành viên có tần suất tương tác và đặt câu hỏi nhiều nhất."
         />
       </div>
 
