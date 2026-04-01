@@ -30,7 +30,7 @@ const Dashboard = () => {
   const [range, setRange] = useState({ start: "", end: "" });
   const [isFilterChanging, setIsFilterChanging] = useState(false);
 
-  // Logic filter khớp trực tiếp với API Backend mới
+  // LOGIC MỚI: Gộp lọc 1 ngày và lọc khoảng ngày vào chung Object gửi API
   const activeFilter = useMemo(() => {
     if (filterMode === "all") return "all";
     if (filterMode === "today") return { days: 1 };
@@ -40,8 +40,13 @@ const Dashboard = () => {
       return { year: parseInt(year), month: parseInt(month) };
     }
 
-    if (filterMode === "range" && range.start && range.end) {
-      return { start_date: range.start, end_date: range.end };
+    if (filterMode === "range" && range.start) {
+      // Nếu chỉ có ngày bắt đầu -> Lọc cho đúng 1 ngày đó
+      // Nếu có cả hai -> Lọc theo khoảng
+      return {
+        start_date: range.start,
+        end_date: range.end || range.start,
+      };
     }
 
     return "all";
@@ -49,6 +54,7 @@ const Dashboard = () => {
 
   const { data, loading } = useDashboard(activeFilter);
 
+  // Quản lý trạng thái loading khi chuyển đổi filter
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsFilterChanging(true);
@@ -61,6 +67,7 @@ const Dashboard = () => {
 
   const showSkeleton = loading || isFilterChanging || !data.kpis;
 
+  // Tối ưu KPI Cards với Description đã thống nhất
   const kpiCards = useMemo(() => {
     const k = data.kpis?.kpis || {};
     return [
@@ -122,19 +129,20 @@ const Dashboard = () => {
               DASHBOARD
             </h1>
             <p className="text-slate-500 mt-2 font-medium uppercase text-xs tracking-wider">
-              {filterMode === "range" && range.start && range.end
-                ? `Khoảng: ${range.start} ➔ ${range.end}`
+              {filterMode === "range" && range.start
+                ? !range.end
+                  ? `Ngày: ${range.start}`
+                  : `Khoảng: ${range.start} ➔ ${range.end}`
                 : "Hệ thống phân tích dữ liệu Trạng Nguyên AI"}
             </p>
           </div>
 
-          {/* Component lọc đã tách riêng */}
           <TimeFilter
             filterMode={filterMode}
             setFilterMode={setFilterMode}
-            selectedMonth={selectedMonth} // THÊM DÒNG NÀY
+            selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}
-            range={range} // THÊM DÒNG NÀY
+            range={range}
             setRange={setRange}
           />
         </header>
