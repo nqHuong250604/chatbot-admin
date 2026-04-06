@@ -597,6 +597,14 @@ def get_n8n_url():
     return url
 
 
+def apply_kb_version_filter(query, version: str):
+    """Ho tro ca metadata.version va metadata.phan_loai cho du lieu KB cu."""
+    normalized_version = version.strip().lower()
+    return query.or_(
+        f"metadata->>version.ilike.{normalized_version},metadata->>phan_loai.ilike.{normalized_version}"
+    )
+
+6
 def send_to_n8n(payload: dict) -> dict:
     """Gui payload den n8n webhook va tra ve ket qua."""
     try:
@@ -630,16 +638,16 @@ class QAItem(BaseModel):
 
 
 class KBSingleRequest(BaseModel):
-    version : str
-    category: str = ""
-    question: str
-    answer  : str
+    version   : str
+    department: str = ""
+    question  : str
+    answer    : str
 
 
 class KBBatchRequest(BaseModel):
-    version : str
-    category: str = ""
-    items   : List[QAItem]
+    version   : str
+    department: str = ""
+    items     : List[QAItem]
 
 
 # ── Endpoints ─────────────────────────────────────────────────
@@ -653,10 +661,10 @@ def kb_add_single(body: KBSingleRequest):
     **Body:**
     ```json
     {
-      "version" : "v5",
-      "category": "Lich thi",
-      "question": "Lich thi cap tinh thang 3?",
-      "answer"  : "Dien ra tu 15-20/03/2026..."
+      "version"   : "v5",
+      "department": "Hoc vu",
+      "question"  : "Lich thi cap tinh thang 3?",
+      "answer"    : "Dien ra tu 15-20/03/2026..."
     }
     ```
 
@@ -683,10 +691,10 @@ def kb_add_single(body: KBSingleRequest):
         )
 
     payload = {
-        "type"    : "single",
-        "version" : body.version,
-        "category": body.category.strip(),
-        "items"   : [{"question": body.question.strip(), "answer": body.answer.strip()}],
+        "type"      : "single",
+        "version"   : body.version,
+        "department": body.department.strip(),
+        "items"     : [{"question": body.question.strip(), "answer": body.answer.strip()}],
     }
     return send_to_n8n(payload)
 
@@ -699,8 +707,8 @@ def kb_add_batch(body: KBBatchRequest):
     **Body:**
     ```json
     {
-      "version" : "v6",
-      "category": "Nghiep vu",
+      "version"   : "v6",
+      "department": "Kinh doanh",
       "items": [
         {"question": "Cau hoi 1", "answer": "Tra loi 1"},
         {"question": "Cau hoi 2", "answer": "Tra loi 2"}
@@ -733,10 +741,10 @@ def kb_add_batch(body: KBBatchRequest):
             )
 
     payload = {
-        "type"    : "batch",
-        "version" : body.version,
-        "category": body.category.strip(),
-        "items"   : [
+        "type"      : "batch",
+        "version"   : body.version,
+        "department": body.department.strip(),
+        "items"     : [
             {"question": item.question.strip(), "answer": item.answer.strip()}
             for item in body.items
         ],
@@ -746,9 +754,9 @@ def kb_add_batch(body: KBBatchRequest):
 
 @app.post("/api/kb/upload", tags=["Quan ly KB"])
 async def kb_upload_file(
-    version : str        = Query(..., description="v2 | v5 | v6"),
-    category: str        = Query("",  description="Chu de (tuy chon)"),
-    file    : UploadFile = File(...),
+    version   : str        = Query(..., description="v2 | v5 | v6"),
+    department: str        = Query("",  description="Phong ban (tuy chon)"),
+    file      : UploadFile = File(...),
 ):
     """
     Upload file để import nhiều Q&A cùng lúc.
@@ -866,10 +874,10 @@ async def kb_upload_file(
         )
 
     payload = {
-        "type"    : "batch",
-        "version" : version,
-        "category": category.strip(),
-        "items"   : items,
+        "type"      : "batch",
+        "version"   : version,
+        "department": department.strip(),
+        "items"     : items,
     }
     result          = send_to_n8n(payload)
     result["parsed"] = len(items)
@@ -892,7 +900,7 @@ def kb_list(
         {
           "id"      : 1,
           "content" : "Noi dung chunk...",
-          "metadata": {"version": "v5", "category": "Lich thi"}
+          "metadata": {"version": "v5", "department": "Hoc vu"}
         }
       ],
       "total": 50,
@@ -901,7 +909,8 @@ def kb_list(
     }
     ```
     """
-    if version and version not in VERSIONS:
+    normalized_version = version.strip().lower() if version else None
+    if normalized_version and normalized_version not in VERSIONS:
         raise HTTPException(
             status_code=400,
             detail=f"version phai la mot trong {VERSIONS}"
@@ -909,8 +918,8 @@ def kb_list(
     try:
         offset = (page - 1) * limit
         q = get_client().table("documents").select("id, content, metadata")
-        if version:
-            q = q.eq("metadata->>version", version)
+        if normalized_version:
+            q = apply_kb_version_filter(q, normalized_version)
         resp = q.order("id", desc=True).range(offset, offset + limit - 1).execute()
         return {
             "data" : resp.data or [],

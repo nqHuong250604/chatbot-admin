@@ -13,7 +13,6 @@ export const useDashboard = (filter = "all") => {
   const [loading, setLoading] = useState(true);
   const isMounted = useRef(true);
 
-  // Stringify filter để useEffect/useCallback có thể theo dõi sự thay đổi của Object
   const filterKey =
     typeof filter === "object" ? JSON.stringify(filter) : filter;
 
@@ -22,8 +21,6 @@ export const useDashboard = (filter = "all") => {
       try {
         let res = await fetchFn(filter);
 
-        // Logic Fallback: Nếu dữ liệu theo filter rỗng, lấy All-time
-        // Lưu ý: filter !== "all" giờ bao gồm cả check Object rỗng
         const isEmpty =
           !res ||
           (res.kpis && res.kpis.total_sessions === 0) ||
@@ -43,14 +40,14 @@ export const useDashboard = (filter = "all") => {
         console.error(`Lỗi load ${key}:`, err);
       }
     },
-    [filter, filterKey], // Theo dõi cả giá trị filter và key string của nó
+    [filter, filterKey],
   );
 
   useEffect(() => {
     isMounted.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
-    // Thực hiện fetch đồng thời các section
     const loadAllData = async () => {
       await Promise.all([
         fetchSection("kpis", dashboardService.getSummary),
@@ -74,7 +71,7 @@ export const useDashboard = (filter = "all") => {
     return () => {
       isMounted.current = false;
     };
-  }, [filterKey, fetchSection]); // Chỉ trigger lại khi filter thay đổi thực sự
+  }, [filterKey, fetchSection]);
 
   return { data, loading };
 };

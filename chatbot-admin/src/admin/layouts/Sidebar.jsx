@@ -57,9 +57,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           ${shouldHideText ? "lg:w-20" : "lg:w-72"} 
           lg:relative lg:translate-x-0 shrink-0 shadow-2xl flex flex-col`}
       >
-        {/* HEADER: LOGO TRÊN - ACTION DƯỚI */}
+        {/* HEADER */}
         <div className="p-4 flex flex-col items-center shrink-0 relative min-h-[180px] transition-all duration-300">
-          {/* NÚT ĐÓNG (X): Hiện khi ở Mobile (isOpen) HOẶC Desktop đang mở rộng */}
           {(!shouldHideText || !isDesktop) && (
             <button
               onClick={handleToggleAction}
@@ -69,7 +68,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </button>
           )}
 
-          {/* LOGO: Luôn to rõ ràng */}
+          {/* LOGO */}
           <div
             className={`transition-all duration-300 ease-in-out flex items-center justify-center mb-4
               ${shouldHideText ? "w-14 h-14 mt-4" : "w-24 h-24 mt-6"}`}
@@ -81,7 +80,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             />
           </div>
 
-          {/* NÚT MENU (3 GẠCH): Chỉ hiện khi Desktop đang thu nhỏ */}
+          {/* NÚT MENU */}
           {shouldHideText && (
             <button
               onClick={handleToggleAction}
@@ -108,7 +107,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               </span>
             </NavLink>
             <NavLink
-              to="/admin/knowledge-base" // Đường dẫn này bạn tự định nghĩa trong App.js
+              to="/admin/knowledge-base"
               className={activeStyle}
               onClick={() => !isDesktop && toggleSidebar()}
             >
@@ -122,15 +121,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </div>
 
           <hr className="my-4 border-slate-100 mx-2" />
-
+          {/* 
           <p
             className={`text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 mb-4 transition-all duration-300 
             ${shouldHideText ? "opacity-0 invisible h-0" : "opacity-100 visible h-auto"}`}
           >
             Dịch vụ
-          </p>
+          </p> */}
 
-          <div className="space-y-1">
+          {/* <div className="space-y-1">
             <NavLink
               to="/admin/history"
               className={activeStyle}
@@ -155,7 +154,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 Hỏi đáp AI
               </span>
             </NavLink>
-          </div>
+          </div> */}
 
           <hr className="my-4 border-slate-100 mx-2" />
 

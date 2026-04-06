@@ -2,14 +2,14 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useDashboard } from "../hooks/useDashboard";
 import TimeFilter from "../utils/TimeFilter";
-import DashboardLoading from "../components/DashboardLoading";
-import StatCard from "../components/StatCard";
-import ChartCard from "../components/ChartCard";
-import UserStatistics from "../components/UserStatistics";
-import KBAnalysis from "../components/KBAnalysis";
-import RefusedQuestions from "../components/RefusedQuestions";
-import ChatSessionHistory from "../components/ChatSessionHistory";
-import KeywordAnalytics from "../components/KeywordAnalytics";
+import DashboardLoading from "../components/Dashboard/DashboardLoading";
+import StatCard from "../components/Dashboard/StatCard";
+import ChartCard from "../components/Dashboard/ChartCard";
+import UserStatistics from "../components/Dashboard/UserStatistics";
+import KBAnalysis from "../components/Dashboard/KBAnalysis";
+import RefusedQuestions from "../components/Dashboard/RefusedQuestions";
+import ChatSessionHistory from "../components/Dashboard/ChatSessionHistory";
+import KeywordAnalytics from "../components/Dashboard/KeywordAnalytics";
 import Skeleton from "react-loading-skeleton";
 import { MessageSquare, UserCheck, AlertCircle, Zap } from "lucide-react";
 import {
@@ -30,7 +30,7 @@ const Dashboard = () => {
   const [range, setRange] = useState({ start: "", end: "" });
   const [isFilterChanging, setIsFilterChanging] = useState(false);
 
-  // LOGIC MỚI: Gộp lọc 1 ngày và lọc khoảng ngày vào chung Object gửi API
+  // Gộp lọc 1 ngày và lọc khoảng ngày vào chung Object gửi API
   const activeFilter = useMemo(() => {
     if (filterMode === "all") return "all";
     if (filterMode === "today") return { days: 1 };
@@ -67,7 +67,7 @@ const Dashboard = () => {
 
   const showSkeleton = loading || isFilterChanging || !data.kpis;
 
-  // Tối ưu KPI Cards với Description đã thống nhất
+  // Tối ưu KPI Cards với Description
   const kpiCards = useMemo(() => {
     const k = data.kpis?.kpis || {};
     return [

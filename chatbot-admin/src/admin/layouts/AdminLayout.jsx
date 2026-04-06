@@ -25,7 +25,7 @@ const AdminLayout = () => {
 
         <main className="flex-1 overflow-y-auto p-0 md:p-8 bg-[#f8fafc]">
           <div className="max-w-[1600px] mx-auto">
-            {/* 5. Quan trọng: Truyền context để các trang con (như Dashboard) có thể dùng toggleSidebar */}
+            {/* 5. Quan trọng: Truyền context để các trang con có thể dùng toggleSidebar */}
             <Outlet context={{ toggleSidebar }} />
           </div>
         </main>

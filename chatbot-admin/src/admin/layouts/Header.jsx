@@ -8,12 +8,10 @@ import {
   LogOut,
   ChevronDown,
 } from "lucide-react";
-// import { useNavigate } from "react-router-dom";
 
 const Header = ({ toggleSidebar }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-  // const navigate = useNavigate();
 
   // Xử lý khi click ra ngoài thì đóng dropdown
   useEffect(() => {

@@ -15,7 +15,7 @@ const ChatSessionHistory = memo(({ sessions }) => {
 
   return (
     <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 font-sans">
-      {/* Header - Giữ nguyên */}
+      {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <h3 className="font-bold flex items-center text-slate-800">
           <span className="w-1.5 h-6 bg-indigo-500 rounded-full mr-4 shadow-sm"></span>
@@ -47,7 +47,6 @@ const ChatSessionHistory = memo(({ sessions }) => {
 
       {isOpen && (
         <div className="rounded-lg border border-slate-100 overflow-hidden">
-          {/* Table Header - Tách riêng để khi cuộn dữ liệu header vẫn đứng yên (Sticky) */}
           <div className="overflow-x-auto custom-scrollbar">
             <div className="inline-block min-w-full align-middle">
               <div className="max-h-[450px] overflow-y-auto overflow-x-hidden custom-scrollbar">
