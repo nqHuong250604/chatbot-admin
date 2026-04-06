@@ -90,17 +90,29 @@ def fetch_raw(client: Client) -> pd.DataFrame:
     if USER_ID_COLUMN_EXISTS:
         base_cols.append("user_id")
     select_cols = ", ".join(base_cols)
+    page_size = 1000
 
     # Retry tối đa 3 lần nếu Supabase trả lỗi 502/503
     last_error = None
     for attempt in range(3):
         try:
-            response = (
-                client.table(TABLE_NAME)
-                .select(select_cols)
-                .order("created_at", desc=False)
-                .execute()
-            )
+            all_rows = []
+            offset = 0
+
+            while True:
+                response = (
+                    client.table(TABLE_NAME)
+                    .select(select_cols)
+                    .order("created_at", desc=False)
+                    .range(offset, offset + page_size - 1)
+                    .execute()
+                )
+                batch = response.data or []
+                all_rows.extend(batch)
+
+                if len(batch) < page_size:
+                    break
+                offset += page_size
             break
         except Exception as e:
             last_error = e
@@ -109,10 +121,10 @@ def fetch_raw(client: Client) -> pd.DataFrame:
     else:
         raise last_error
 
-    if not response.data:
+    if not all_rows:
         return pd.DataFrame(columns=list(COL_MAP.values()))
 
-    df = pd.DataFrame(response.data)
+    df = pd.DataFrame(all_rows)
     df = df.rename(columns=COL_MAP)   # map về tên chuẩn
 
     df['msg_type']   = df['message'].apply(_get_type)
