@@ -11,6 +11,11 @@ const KnowledgeManagement = () => {
       label: "Nhập từng câu hỏi",
       path: "/admin/knowledge-base/insert",
     },
+    {
+      id: "batch",
+      label: "Nhập nhiều câu hỏi",
+      path: "/admin/knowledge-base/batch",
+    },
     { id: "file", label: "Import file", path: "/admin/knowledge-base/import" },
     {
       id: "list",

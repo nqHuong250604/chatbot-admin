@@ -5,13 +5,15 @@ import { toast } from "react-hot-toast";
 
 const FileImport = () => {
   const [file, setFile] = useState(null);
+  const [version, setVersion] = useState("v2");
+  const [department, setDepartment] = useState("");
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async () => {
     if (!file) return toast.error("Vui lòng chọn file!");
     setUploading(true);
     try {
-      const res = await kbService.uploadFile(file);
+      const res = await kbService.uploadFile(file, version, department);
       toast.success(res.data.message || "File đã được gửi sang n8n!");
       setFile(null);
     } catch {
@@ -22,7 +24,7 @@ const FileImport = () => {
   };
 
   return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-8 text-left animate-in fade-in">
+    <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-6 text-left animate-in fade-in">
       <div className="flex items-start gap-4">
         <div className="text-blue-600 flex-none mt-1">
           <FileUp size={24} />
@@ -41,7 +43,37 @@ const FileImport = () => {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-100">
+        <div className="space-y-2">
+          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+            Phiên bản (Bắt buộc)
+          </label>
+          <select
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            className="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+          >
+            <option value="v2">v2 (Sản phẩm)</option>
+            <option value="v5">v5 (Toán)</option>
+            <option value="v6">v6 (Tiếng Việt)</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+            Phòng ban (Tuỳ chọn)
+          </label>
+          <input
+            type="text"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            placeholder="Ví dụ: Kinh doanh"
+            className="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+          />
+        </div>
+      </div>
+
       <div className="space-y-4">
+
         <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
           Chọn file để upload{" "}
           <HelpCircle size={14} className="text-slate-300" />
@@ -78,7 +110,7 @@ const FileImport = () => {
                 handleUpload();
               }}
               disabled={uploading}
-              className="mt-6 px-10 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 disabled:opacity-50 transition-all"
+              className="mt-6 w-full py-4 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 disabled:opacity-50 transition-all"
             >
               {uploading ? "Đang xử lý..." : "Bắt đầu Import ngay"}
             </button>

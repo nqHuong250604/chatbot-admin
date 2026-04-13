@@ -7,7 +7,7 @@ const SingleAdd = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     version: "v2",
-    category: "",
+    department: "",
     question: "",
     answer: "",
   });
@@ -23,10 +23,6 @@ const SingleAdd = () => {
       return toast.error("Vui lòng nhập đầy đủ câu hỏi và câu trả lời!");
     }
 
-    if (!formData.category.trim()) {
-      return toast.error("Vui lòng nhập chủ đề (category) để n8n phân loại!");
-    }
-
     setLoading(true);
     try {
       const res = await kbService.addSingle(formData);
@@ -34,7 +30,7 @@ const SingleAdd = () => {
       // AxiosClient đã return data, nên res ở đây chính là object kết quả
       toast.success(res.message || "Đã gửi dữ liệu sang n8n xử lý!");
 
-      // Reset form nhưng giữ lại Version và Category để nhập tiếp cho nhanh
+      // Reset form nhưng giữ lại Version và Department để nhập tiếp cho nhanh
       setFormData((prev) => ({
         ...prev,
         question: "",
@@ -70,14 +66,14 @@ const SingleAdd = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-100">
         <div className="space-y-2">
-          <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-            Phiên bản (Metadata)
+          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+            Phiên bản (Bắt buộc)
           </label>
           <select
             name="version"
-            className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+            className="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
             value={formData.version}
             onChange={handleChange}
           >
@@ -88,26 +84,26 @@ const SingleAdd = () => {
         </div>
 
         <div className="space-y-2">
-          <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-            Chủ đề (Category)
+          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+            Phòng ban (Tuỳ chọn)
           </label>
           <input
-            name="category"
-            className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium"
-            placeholder="Ví dụ: FAQ_Chinh_Sach"
-            value={formData.category}
+            name="department"
+            className="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+            placeholder="Ví dụ: Kinh doanh"
+            value={formData.department}
             onChange={handleChange}
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-          Câu hỏi (Question)
+        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+          Câu hỏi
         </label>
         <textarea
           name="question"
-          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl h-24 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
+          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl h-24 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none text-slate-700 font-medium"
           placeholder="Nhập nội dung câu hỏi..."
           value={formData.question}
           onChange={handleChange}
@@ -115,12 +111,12 @@ const SingleAdd = () => {
       </div>
 
       <div className="space-y-2">
-        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-          Nội dung tri thức (Answer/Content)
+        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+          Nội dung tri thức
         </label>
         <textarea
           name="answer"
-          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl h-40 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
+          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl h-40 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none text-slate-700 font-medium"
           placeholder="Nhập câu trả lời hoặc đoạn văn bản tri thức..."
           value={formData.answer}
           onChange={handleChange}

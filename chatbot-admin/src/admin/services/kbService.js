@@ -13,10 +13,11 @@ export const kbService = {
   addBatch: (payload) => axiosClient.post(`${KB_PREFIX}/batch`, payload),
 
   // Upload file (TXT, DOCX, CSV, XLSX)
-  uploadFile: (file) => {
+  uploadFile: (file, version, department) => {
     const formData = new FormData();
     formData.append("file", file);
     return axiosClient.post(`${KB_PREFIX}/upload`, formData, {
+      params: { version, department },
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
