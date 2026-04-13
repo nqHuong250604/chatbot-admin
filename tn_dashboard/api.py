@@ -18,6 +18,8 @@ import os
 from calendar import monthrange
 from datetime import date, datetime
 from typing import Optional
+import time
+import threading
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -105,6 +107,24 @@ def filter_params(
     return params
 
 
+# ── Global Cache Tối Ưu Tải ──────────────────────────────────
+_DATA_CACHE = {}
+_DATA_CACHE_TTL = 300 # 5 phút
+_CACHE_LOCK = threading.Lock()
+
+def get_cached_raw_df():
+    """Lấy dữ liệu thô từ DB, có cơ chế cache 5 phút để tránh 5 requests frontend đâm DB đồng thời."""
+    now = time.time()
+    
+    with _CACHE_LOCK:
+        if "df" in _DATA_CACHE and (now - _DATA_CACHE["time"] < _DATA_CACHE_TTL):
+            return _DATA_CACHE["df"].copy()
+        
+        df = fetch_raw(get_client())
+        _DATA_CACHE["df"] = df
+        _DATA_CACHE["time"] = time.time()
+        return df.copy()
+
 def load_and_filter(
     days: Optional[int] = None,
     selected_date: Optional[date] = None,
@@ -130,7 +150,7 @@ def load_and_filter(
             detail="start_date không được lớn hơn end_date",
         )
 
-    df = fetch_raw(get_client())
+    df = get_cached_raw_df()
     if df.empty:
         empty = pd.DataFrame()
         return df, empty, empty, empty, empty, empty, empty
