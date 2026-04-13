@@ -42,20 +42,20 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   return (
     <>
       {/* 1. LỚP NỀN MỜ CHO MOBILE */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] lg:hidden transition-opacity duration-300"
-          onClick={toggleSidebar}
-        />
-      )}
+      <div
+        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[90] lg:hidden transition-all duration-300 ease-in-out ${
+          isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+        }`}
+        onClick={toggleSidebar}
+      />
 
       {/* 2. SIDEBAR CHÍNH */}
       <aside
         className={`fixed inset-y-0 left-0 z-[100] bg-white 
-          transition-[width,transform] duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full"} 
-          ${shouldHideText ? "lg:w-20" : "lg:w-72"} 
-          lg:relative lg:translate-x-0 shrink-0 shadow-2xl flex flex-col`}
+          transition-all duration-300 ease-in-out
+          ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full shadow-none"} 
+          ${shouldHideText ? "lg:w-20" : "lg:w-[280px]"} 
+          lg:relative lg:translate-x-0 shrink-0 flex flex-col`}
       >
         {/* HEADER */}
         <div className="p-4 flex flex-col items-center shrink-0 relative min-h-[180px] transition-all duration-300">
@@ -71,7 +71,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           {/* LOGO */}
           <div
             className={`transition-all duration-300 ease-in-out flex items-center justify-center mb-4
-              ${shouldHideText ? "w-14 h-14 mt-4" : "w-24 h-24 mt-6"}`}
+              ${shouldHideText ? "w-12 h-12 mt-4" : "w-16 h-16 mt-6"}`}
           >
             <img
               src={logo}
