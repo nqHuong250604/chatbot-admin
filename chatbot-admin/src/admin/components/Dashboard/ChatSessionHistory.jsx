@@ -8,6 +8,7 @@ import {
   XCircle,
   Clock,
 } from "lucide-react";
+import EmptyState from "./EmptyState";
 
 const ChatSessionHistory = memo(({ sessions }) => {
   const [isOpen, setIsOpen] = useState(true);
@@ -122,11 +123,11 @@ const ChatSessionHistory = memo(({ sessions }) => {
                       })
                     ) : (
                       <tr>
-                        <td
-                          colSpan="7"
-                          className="p-10 text-center text-slate-400 italic"
-                        >
-                          Hệ thống chưa ghi nhận dữ liệu phiên chat nào.
+                        <td colSpan="7" className="p-0">
+                          <EmptyState
+                            message="Chưa ghi nhận dữ liệu phiên chat nào"
+                            className="h-[250px] w-full border-none"
+                          />
                         </td>
                       </tr>
                     )}

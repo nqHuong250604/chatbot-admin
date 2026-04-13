@@ -2,6 +2,7 @@ import React, { memo, useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
 import { Users, UserCheck, Ghost, Award, HelpCircle } from "lucide-react";
 import dayjs from "dayjs";
+import EmptyState from "./EmptyState";
 // --- BIỂU ĐỒ 1: PHIÊN CHAT THEO USER (NGANG) ---
 const UserSessionsChart = memo(({ data = [] }) => {
   const series = useMemo(
@@ -226,7 +227,11 @@ const UserStatistics = ({ userData = [] }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {userData.length === 0 ? (
+        <EmptyState message="Chưa có dữ liệu thống kê người dùng" className="h-[250px]" />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MiniStat
           label="USER ĐÃ XÁC THỰC"
           value={stats.total || 0}
@@ -333,6 +338,8 @@ const UserStatistics = ({ userData = [] }) => {
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 };

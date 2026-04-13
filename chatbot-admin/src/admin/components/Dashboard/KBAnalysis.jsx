@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   HelpCircle,
 } from "lucide-react";
+import EmptyState from "./EmptyState";
 
 // Tách MiniStat ra ngoài và sử dụng memo để tối ưu hiệu năng render
 const MiniStat = memo(({ label, value, barColor, icon, description }) => (
@@ -151,12 +152,16 @@ const KBAnalysis = ({ data }) => {
         </h3>
         <div className="w-full pt-6">
           {data ? (
-            <ReactApexChart
-              options={chartOptions}
-              series={series}
-              type="donut"
-              height={280}
-            />
+            summary.total === 0 ? (
+              <EmptyState message="Chưa có dữ liệu phân tích KB" className="h-[250px] mt-4" />
+            ) : (
+              <ReactApexChart
+                options={chartOptions}
+                series={series}
+                type="donut"
+                height={280}
+              />
+            )
           ) : (
             <div className="text-slate-300 text-sm animate-pulse italic">
               Đang tải biểu đồ tri thức...

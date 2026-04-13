@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
+import EmptyState from "./EmptyState";
 
 const KeywordChart = ({ title, data = [], color }) => {
   const series = [
@@ -106,11 +107,19 @@ const KeywordAnalytics = ({ keywords }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top từ đơn */}
-        <KeywordChart title="Phân tích từ đơn" data={words} color="#6366f1" />
+        {words.length === 0 && bigrams.length === 0 ? (
+          <div className="col-span-1 lg:col-span-2">
+            <EmptyState message="Chưa có dữ liệu phân tích từ khóa" className="h-[250px]" />
+          </div>
+        ) : (
+          <>
+            {/* Top từ đơn */}
+            <KeywordChart title="Phân tích từ đơn" data={words} color="#6366f1" />
 
-        {/* Top cụm 2 từ */}
-        <KeywordChart title="Phân tích cụm từ" data={bigrams} color="#10b981" />
+            {/* Top cụm 2 từ */}
+            <KeywordChart title="Phân tích cụm từ" data={bigrams} color="#10b981" />
+          </>
+        )}
       </div>
 
       {/* Footer nhỏ để lấp đầy không gian nếu cần */}

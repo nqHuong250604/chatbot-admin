@@ -1,6 +1,7 @@
 import React, { memo, useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
 import dayjs from "dayjs";
+import EmptyState from "../components/Dashboard/EmptyState";
 
 const commonTooltip = {
   theme: "light",
@@ -69,13 +70,25 @@ export const DailyTrendChart = memo(({ data }) => {
     [chartData],
   );
 
+  if (chartData.length === 0) {
+    return <EmptyState message="Không có dữ liệu xu hướng hàng ngày" />;
+  }
+
+  // Tự động tính toán chiều rộng để biểu đồ không bị dồn cục
+  const minChartWidth = chartData.length > 7 ? chartData.length * 45 : "100%";
+
   return (
-    <ReactApexChart
-      options={options}
-      series={series}
-      type="bar"
-      height="100%"
-    />
+    <div className="w-full h-full min-h-[300px] overflow-x-auto overflow-y-hidden">
+      <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }}>
+        <ReactApexChart
+          options={options}
+          series={series}
+          type="bar"
+          height="100%"
+          width="100%"
+        />
+      </div>
+    </div>
   );
 });
 
@@ -161,14 +174,23 @@ export const RateLineChart = memo(({ data }) => {
     [chartData],
   );
 
+  if (chartData.length === 0) {
+    return <EmptyState message="Không có dữ liệu tỉ lệ phản hồi" />;
+  }
+
+  const minChartWidth = chartData.length > 7 ? chartData.length * 50 : "100%";
+
   return (
-    <div className="w-full h-full min-h-[300px]">
-      <ReactApexChart
-        options={options}
-        series={series}
-        type="line"
-        height="100%"
-      />
+    <div className="w-full h-full min-h-[300px] overflow-x-auto overflow-y-hidden">
+      <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }}>
+        <ReactApexChart
+          options={options}
+          series={series}
+          type="line"
+          height="100%"
+          width="100%"
+        />
+      </div>
     </div>
   );
 });
@@ -244,8 +266,27 @@ export const PeakHourApexChart = memo(({ data }) => {
     };
   }, [chartData]);
 
+  // Peak hour chart có 24 giờ nên có thể chứa vừa độ rộng, chỉ cần hiển thị empty nếu không có phiên nào
+  const totalCounts = chartData.reduce((acc, curr) => acc + curr.count, 0);
+
+  if (totalCounts === 0) {
+    return (
+      <EmptyState message="Chưa có phiên chat nào để phân tích giờ cao điểm" />
+    );
+  }
+
   return (
-    <ReactApexChart options={options} series={series} type="bar" height={300} />
+    <div className="w-full h-full min-h-[300px] overflow-x-auto overflow-y-hidden">
+      <div style={{ minWidth: "500px", height: "100%" }}>
+        <ReactApexChart
+          options={options}
+          series={series}
+          type="bar"
+          height={300}
+          width="100%"
+        />
+      </div>
+    </div>
   );
 });
 
@@ -306,6 +347,10 @@ export const ResponseRateDonut = memo(({ answered = 0, refused = 0 }) => {
       stroke: { show: false },
     };
   }, [sAnswered, sRefused]);
+
+  if (sAnswered === 0 && sRefused === 0) {
+    return <EmptyState message="Chưa có dữ liệu phản hồi" />;
+  }
 
   return (
     <ReactApexChart
@@ -415,23 +460,22 @@ export const PeakHourChart = memo(({ data = [] }) => {
   );
 
   if (!data?.length) {
-    return (
-      <div className="flex items-center justify-center h-[300px] bg-slate-50 rounded-xl border border-dashed border-slate-200">
-        <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">
-          Không có dữ liệu xu hướng hàng ngày
-        </p>
-      </div>
-    );
+    return <EmptyState message="Không có dữ liệu xu hướng câu hỏi hàng ngày" />;
   }
 
+  const minChartWidth = data.length > 7 ? data.length * 45 : "100%";
+
   return (
-    <div className="w-full h-full min-h-[300px]">
-      <ReactApexChart
-        options={options}
-        series={series}
-        type="bar"
-        height="100%"
-      />
+    <div className="w-full h-full min-h-[300px] overflow-x-auto overflow-y-hidden">
+      <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }}>
+        <ReactApexChart
+          options={options}
+          series={series}
+          type="bar"
+          height="100%"
+          width="100%"
+        />
+      </div>
     </div>
   );
 });
