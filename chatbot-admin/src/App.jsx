@@ -30,7 +30,6 @@ function App() {
             <Route path="batch" element={<BatchAdd />} />
             <Route path="import" element={<FileImport />} />
             <Route path="list" element={<KBList />} />
-            <Route path="guide" element={<N8nGuide />} />
           </Route>
           <Route path="settings" element={<Settings />} />
         </Route>
