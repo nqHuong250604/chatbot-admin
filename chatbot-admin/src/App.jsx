@@ -13,7 +13,6 @@ import SingleAdd from "./admin/components/KnowledgeBase/SingleAdd";
 import BatchAdd from "./admin/components/KnowledgeBase/BatchAdd";
 import FileImport from "./admin/components/KnowledgeBase/FileImport";
 import KBList from "./admin/components/KnowledgeBase/KBList";
-import N8nGuide from "./admin/components/KnowledgeBase/N8nGuide";
 
 function App() {
   return (
