@@ -26,11 +26,9 @@ const UserSessionsChart = memo(({ data = [] }) => {
       plotOptions: {
         bar: { horizontal: true, borderRadius: 6, barHeight: "60%" },
       },
-      colors: ["#6366f1"],
+      colors: ["#0ea5e9"],
       dataLabels: {
-        enabled: true,
-        textAnchor: "start",
-        style: { fontSize: "11px", fontWeight: 700, colors: ["#fff"] },
+        enabled: false,
       },
       xaxis: {
         // GIỮ NGUYÊN HỌ TÊN ĐẦY ĐỦ
@@ -48,7 +46,7 @@ const UserSessionsChart = memo(({ data = [] }) => {
       grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
       tooltip: { theme: "light", y: { formatter: (val) => `${val} phiên` } },
       title: {
-        text: "TOP PHIÊN CHAT THEO USER",
+        text: "TOP NHÂN VIÊN GIAO TIẾP NHIỀU NHẤT",
         style: {
           fontSize: "11px",
           color: "#94a3b8",
@@ -83,11 +81,12 @@ const UserActivityChart = memo(({ data = [] }) => {
       chart: {
         id: "user-activity-stacked",
         type: "bar",
-        stacked: true,
+        stacked: false,
         toolbar: { show: false },
         fontFamily: "Inter, sans-serif",
       },
-      colors: ["#3b82f6", "#10b981"],
+      colors: ["#334155", "#fb923c"],
+      dataLabels: { enabled: false },
       plotOptions: { bar: { columnWidth: "40%", borderRadius: 4 } },
       xaxis: {
         // GIỮ NGUYÊN HỌ TÊN ĐẦY ĐỦ
@@ -232,112 +231,112 @@ const UserStatistics = ({ userData = [] }) => {
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MiniStat
-          label="USER ĐÃ XÁC THỰC"
-          value={stats.total || 0}
-          unit="người"
-          barColor="bg-slate-400"
-          icon={<Users size={14} className="text-slate-500" />}
-          description="Tổng số nhân viên trong hệ thống đã đăng nhập và sử dụng Bot."
-        />
+            <MiniStat
+              label="USER ĐÃ XÁC THỰC"
+              value={stats.total || 0}
+              unit="người"
+              barColor="bg-slate-400"
+              icon={<Users size={14} className="text-slate-500" />}
+              description="Tổng số nhân viên trong hệ thống đã đăng nhập và sử dụng Bot."
+            />
 
-        <MiniStat
-          label="PHIÊN ĐỊNH DANH"
-          value={stats.verified || 0}
-          unit="phiên"
-          barColor="bg-emerald-500"
-          icon={<UserCheck size={14} className="text-emerald-600" />}
-          description="Số cuộc trò chuyện từ người dùng đã đăng nhập tài khoản."
-        />
+            <MiniStat
+              label="PHIÊN ĐỊNH DANH"
+              value={stats.verified || 0}
+              unit="phiên"
+              barColor="bg-emerald-500"
+              icon={<UserCheck size={14} className="text-emerald-600" />}
+              description="Số cuộc trò chuyện từ người dùng đã đăng nhập tài khoản."
+            />
 
-        <MiniStat
-          label="PHIÊN VÃNG LAI"
-          value="0"
-          unit="khách"
-          barColor="bg-rose-500"
-          icon={<Ghost size={14} className="text-rose-600" />}
-          description="Số cuộc trò chuyện từ người dùng ẩn danh hoặc chưa đăng nhập."
-        />
+            <MiniStat
+              label="PHIÊN VÃNG LAI"
+              value="0"
+              unit="khách"
+              barColor="bg-rose-500"
+              icon={<Ghost size={14} className="text-rose-600" />}
+              description="Số cuộc trò chuyện từ người dùng ẩn danh hoặc chưa đăng nhập."
+            />
 
-        <MiniStat
-          label="USER DÙNG NHIỀU NHẤT"
-          value={stats.top?.full_name || "N/A"}
-          unit="Top 1"
-          barColor="bg-blue-500"
-          icon={<Award size={14} className="text-blue-600" />}
-          description="Thành viên có tần suất tương tác và đặt câu hỏi nhiều nhất."
-        />
-      </div>
+            <MiniStat
+              label="USER DÙNG NHIỀU NHẤT"
+              value={stats.top?.full_name || "N/A"}
+              unit="Top 1"
+              barColor="bg-blue-500"
+              icon={<Award size={14} className="text-blue-600" />}
+              description="Thành viên có tần suất tương tác và đặt câu hỏi nhiều nhất."
+            />
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
-        <UserSessionsChart data={chartData} />
-        <UserActivityChart data={chartData} />
-      </div>
+          <div className="grid grid-cols-1 gap-8 pt-4">
+            <UserSessionsChart data={chartData} />
+            <UserActivityChart data={chartData} />
+          </div>
 
-      <div className="pt-4 overflow-x-auto custom-scrollbar">
-        <table className="w-full text-left border-collapse border border-slate-100">
-          <thead>
-            <tr className="text-[10px] text-slate-400 uppercase bg-slate-50/80">
-              <th className="p-4 font-bold">Họ tên</th>
-              <th className="p-4 font-bold text-center">Email</th>
-              <th className="p-4 font-bold text-center">Mã bí mật</th>
-              <th className="p-4 font-bold text-center">Phòng ban</th>
-              <th className="p-4 font-bold text-center">Role</th>
-              <th className="p-4 font-bold text-center">Phiên chat</th>
-              <th className="p-4 font-bold text-center">Tổng câu hỏi</th>
-              <th className="p-4 font-bold text-center">Lượt gọi FAQ</th>
-              <th className="p-4 font-bold text-center">TB hỏi/phiên</th>
-              <th className="p-4 font-bold text-center">Số ngày sử dụng</th>
-              <th className="p-4 font-bold text-center">Lần đầu</th>
-              <th className="p-4 font-bold text-center">Lần cuối</th>
-            </tr>
-          </thead>
-          <tbody className="text-[11px] font-medium text-slate-600">
-            {userData.map((user, idx) => (
-              <tr
-                key={idx}
-                className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
-              >
-                <td className="p-4 font-bold text-slate-800">
-                  {user.full_name}
-                </td>
-                <td className="p-4 text-center">{user.email || "N/A"}</td>
-                <td className="p-4 text-center font-mono text-indigo-500 font-bold">
-                  {user.secret_code || "********"}
-                </td>
-                <td className="p-4">{user.department}</td>
-                <td className="p-4">
-                  <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 uppercase">
-                    {user.role || "guest"}
-                  </span>
-                </td>
-                <td className="p-4 text-center">{user.sessions}</td>
-                <td className="p-4 text-center">{user.total_questions}</td>
-                <td className="p-4 text-center text-emerald-600 font-bold">
-                  {user.faq_calls}
-                </td>
-                <td className="p-4 text-center">
-                  {(
-                    Number(user.total_questions) /
-                    Math.max(1, Number(user.sessions))
-                  ).toFixed(1)}
-                </td>
-                <td className="p-4 text-center">
-                  <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 uppercase">
-                    {user.days_active || 0} ngày
-                  </span>
-                </td>
-                <td className="p-4 text-center">
-                  {renderFormattedDate(user.first_seen)}
-                </td>
-                <td className="p-4 text-center">
-                  {renderFormattedDate(user.last_seen)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          <div className="pt-4 overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse border border-slate-100">
+              <thead>
+                <tr className="text-[10px] text-slate-400 uppercase bg-slate-50/80">
+                  <th className="p-4 font-bold">Họ tên</th>
+                  <th className="p-4 font-bold text-center">Email</th>
+                  <th className="p-4 font-bold text-center">Mã bí mật</th>
+                  <th className="p-4 font-bold text-center">Phòng ban</th>
+                  <th className="p-4 font-bold text-center">Role</th>
+                  <th className="p-4 font-bold text-center">Phiên chat</th>
+                  <th className="p-4 font-bold text-center">Tổng câu hỏi</th>
+                  <th className="p-4 font-bold text-center">Lượt gọi FAQ</th>
+                  <th className="p-4 font-bold text-center">TB hỏi/phiên</th>
+                  <th className="p-4 font-bold text-center">Số ngày sử dụng</th>
+                  <th className="p-4 font-bold text-center">Lần đầu</th>
+                  <th className="p-4 font-bold text-center">Lần cuối</th>
+                </tr>
+              </thead>
+              <tbody className="text-[11px] font-medium text-slate-600">
+                {userData.map((user, idx) => (
+                  <tr
+                    key={idx}
+                    className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="p-4 font-bold text-slate-800">
+                      {user.full_name}
+                    </td>
+                    <td className="p-4 text-center">{user.email || "N/A"}</td>
+                    <td className="p-4 text-center font-mono text-indigo-500 font-bold">
+                      {user.secret_code || "********"}
+                    </td>
+                    <td className="p-4">{user.department}</td>
+                    <td className="p-4">
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 uppercase">
+                        {user.role || "guest"}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">{user.sessions}</td>
+                    <td className="p-4 text-center">{user.total_questions}</td>
+                    <td className="p-4 text-center text-emerald-600 font-bold">
+                      {user.faq_calls}
+                    </td>
+                    <td className="p-4 text-center">
+                      {(
+                        Number(user.total_questions) /
+                        Math.max(1, Number(user.sessions))
+                      ).toFixed(1)}
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 uppercase">
+                        {user.days_active || 0} ngày
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      {renderFormattedDate(user.first_seen)}
+                    </td>
+                    <td className="p-4 text-center">
+                      {renderFormattedDate(user.last_seen)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>

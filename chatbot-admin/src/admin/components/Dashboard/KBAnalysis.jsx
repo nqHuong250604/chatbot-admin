@@ -109,7 +109,7 @@ const KBAnalysis = ({ data }) => {
       <header className="flex items-center gap-3">
         <span className="text-xl">🔬</span>
         <h2 className="text-lg font-bold tracking-tight text-slate-800">
-          Phân tích độ hoàn thiện KB FAQ
+          Tổng quan FAQ & Kho tri thức
         </h2>
       </header>
 
@@ -148,7 +148,7 @@ const KBAnalysis = ({ data }) => {
 
       <footer className="relative flex-1 flex flex-col items-center justify-center min-h-[250px]">
         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest absolute top-0 left-0">
-          Tỉ lệ KB trả lời được (%)
+          Tỷ lệ câu hỏi được trả lời thành công (%)
         </h3>
         <div className="w-full pt-6">
           {data ? (

@@ -1,7 +1,28 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useRef, useCallback } from "react";
 import ReactApexChart from "react-apexcharts";
 import dayjs from "dayjs";
 import EmptyState from "../components/Dashboard/EmptyState";
+
+// Hook xử lý tooltip bị tràn/cắt khi cuộn tới mép phải cục bộ
+const useTooltipFix = () => {
+  const chartRef = useRef(null);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!chartRef.current) return;
+    const rect = chartRef.current.getBoundingClientRect();
+    const tooltips = chartRef.current.querySelectorAll(".apexcharts-tooltip");
+    tooltips.forEach((t) => {
+      // Nếu vị trí chuột cách mép phải của khung hiển thị dưới 180px, ta ép lật tooltip sang trái
+      if (rect.right - e.clientX < 180) {
+        t.style.setProperty("transform", "translateX(calc(-100% - 40px))", "important");
+      } else {
+        t.style.setProperty("transform", "none", "important");
+      }
+    });
+  }, []);
+
+  return { chartRef, handleMouseMove };
+};
 
 const commonTooltip = {
   theme: "light",
@@ -11,6 +32,8 @@ const commonTooltip = {
 
 // 1. Biểu đồ Xu hướng (DailyTrendChart)
 export const DailyTrendChart = memo(({ data }) => {
+  const { chartRef, handleMouseMove } = useTooltipFix();
+
   // FIX: Dữ liệu JSON bạn gửi là một mảng trực tiếp [{}, {}, ...]
   // Không dùng data?.data nữa mà dùng trực tiếp data
   const chartData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
@@ -36,12 +59,12 @@ export const DailyTrendChart = memo(({ data }) => {
       chart: {
         id: "daily-trend-main",
         type: "bar",
-        stacked: true,
+        stacked: false, // Chuyển thành biểu đồ cột đứng (Basic Column)
         toolbar: { show: false },
         fontFamily: "Inter, sans-serif",
         animations: { enabled: true, easing: "easeinout", speed: 800 },
       },
-      colors: ["#10b981", "#f43f5e"], // Xanh cho thành công, Đỏ cho từ chối
+      colors: ["#10b981", "#e11d48"], // Xanh cho thành công, Đỏ Ruby cho từ chối
       plotOptions: {
         bar: { columnWidth: "45%", borderRadius: 4 },
       },
@@ -62,6 +85,7 @@ export const DailyTrendChart = memo(({ data }) => {
         },
       },
       grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
+      legend: { show: false }, // Đặt mốc cố định html thay vì của canvas
       tooltip: {
         ...commonTooltip,
         y: { formatter: (val) => val + " câu hỏi" },
@@ -74,19 +98,35 @@ export const DailyTrendChart = memo(({ data }) => {
     return <EmptyState message="Không có dữ liệu xu hướng hàng ngày" />;
   }
 
-  // Tự động tính toán chiều rộng để biểu đồ không bị dồn cục
-  const minChartWidth = chartData.length > 7 ? chartData.length * 45 : "100%";
+  const minChartWidth = chartData.length > 7 ? chartData.length * 45 + 80 : "100%";
 
   return (
-    <div className="w-full h-full min-h-[300px] overflow-x-auto overflow-y-hidden">
-      <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }}>
-        <ReactApexChart
-          options={options}
-          series={series}
-          type="bar"
-          height="100%"
-          width="100%"
-        />
+    <div className="w-full h-full flex flex-col">
+      {/* Cố định phần Ghi chú (Legend) ở trên để khi cuộn ngang biểu đồ sẽ không bị trượt mất */}
+      <div className="flex justify-end gap-4 mb-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-[#10b981]"></span>
+          <span className="text-xs font-semibold text-slate-600">Trả lời được</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-[#e11d48]"></span>
+          <span className="text-xs font-semibold text-slate-600">Từ chối</span>
+        </div>
+      </div>
+      <div
+        ref={chartRef}
+        onMouseMove={handleMouseMove}
+        className="w-full flex-1 overflow-x-auto min-h-[300px]"
+      >
+        <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }} className="pr-16 pb-4 pt-2">
+          <ReactApexChart
+            options={options}
+            series={series}
+            type="bar"
+            height="100%"
+            width="100%"
+          />
+        </div>
       </div>
     </div>
   );
@@ -94,6 +134,7 @@ export const DailyTrendChart = memo(({ data }) => {
 
 // 2. Biểu đồ Tỉ lệ (RateLineChart)
 export const RateLineChart = memo(({ data }) => {
+  const { chartRef, handleMouseMove } = useTooltipFix();
   const chartData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
   const series = useMemo(
@@ -114,12 +155,13 @@ export const RateLineChart = memo(({ data }) => {
         toolbar: { show: false },
         fontFamily: "Inter, sans-serif",
       },
-      colors: ["#6366f1"],
+      colors: ["#8b5cf6"],
+      dataLabels: { enabled: false },
       stroke: { curve: "smooth", width: 3, lineCap: "round" },
       markers: {
         size: 5,
         colors: ["#fff"],
-        strokeColors: "#6366f1",
+        strokeColors: "#8b5cf6",
         strokeWidth: 3,
         hover: { size: 7 },
       },
@@ -178,11 +220,15 @@ export const RateLineChart = memo(({ data }) => {
     return <EmptyState message="Không có dữ liệu tỉ lệ phản hồi" />;
   }
 
-  const minChartWidth = chartData.length > 7 ? chartData.length * 50 : "100%";
+  const minChartWidth = chartData.length > 7 ? chartData.length * 50 + 80 : "100%";
 
   return (
-    <div className="w-full h-full min-h-[300px] overflow-x-auto overflow-y-hidden">
-      <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }}>
+    <div
+      ref={chartRef}
+      onMouseMove={handleMouseMove}
+      className="w-full h-full min-h-[300px] overflow-x-auto"
+    >
+      <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }} className="pr-16 pb-4 pt-2">
         <ReactApexChart
           options={options}
           series={series}
@@ -197,6 +243,7 @@ export const RateLineChart = memo(({ data }) => {
 
 // 3. Biểu đồ Giờ cao điểm (PeakHourApexChart)
 export const PeakHourApexChart = memo(({ data }) => {
+  const { chartRef, handleMouseMove } = useTooltipFix();
   const chartData = useMemo(() => {
     // FIX: JSON của bạn trả về data là mảng hours trực tiếp [ {hour_vn: 0, count: 0}, ... ]
     const raw = Array.isArray(data) ? data : [];
@@ -238,27 +285,30 @@ export const PeakHourApexChart = memo(({ data }) => {
           dataLabels: { position: "top" },
         },
       },
-      // Màu sắc: Cột cao nhất là Cam (Amber), còn lại là Xanh (Blue)
+      // Màu sắc: Cột cao nhất là Cam (Amber), còn lại là Xanh Cyan (Cyan)
       colors: chartData.map((item) =>
-        item.count === maxCount && maxCount > 0 ? "#f59e0b" : "#3b82f6",
+        item.count === maxCount && maxCount > 0 ? "#f59e0b" : "#06b6d4",
       ),
       dataLabels: {
-        enabled: true,
-        offsetY: -20,
-        style: { fontSize: "10px", fontWeight: 700, colors: ["#64748b"] },
-        formatter: (val) => (val > 0 ? val : ""),
+        enabled: false
       },
       xaxis: {
         categories: chartData.map((item) => item.hour),
         labels: {
           style: { fontSize: "9px", colors: "#94a3b8", fontWeight: 600 },
         },
-        axisBorder: { show: false },
-        axisTicks: { show: false },
+        axisBorder: { show: true, color: "#e2e8f0" },
+        axisTicks: { show: true, color: "#e2e8f0" },
       },
-      yaxis: { show: false },
-      legend: { show: false },
-      grid: { show: false },
+      yaxis: {
+        show: true,
+        labels: {
+          style: { colors: "#94a3b8", fontSize: "10px" },
+          formatter: (val) => Math.floor(val),
+        },
+      },
+      legend: { show: false }, // Dùng custom HTML legend
+      grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
       tooltip: {
         theme: "light",
         y: { formatter: (val) => `${val} phiên chat` },
@@ -276,15 +326,31 @@ export const PeakHourApexChart = memo(({ data }) => {
   }
 
   return (
-    <div className="w-full h-full min-h-[300px] overflow-x-auto overflow-y-hidden">
-      <div style={{ minWidth: "500px", height: "100%" }}>
-        <ReactApexChart
-          options={options}
-          series={series}
-          type="bar"
-          height={300}
-          width="100%"
-        />
+    <div className="w-full h-full flex flex-col">
+      <div className="flex justify-end gap-4 mb-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-[#f59e0b]"></span>
+          <span className="text-xs font-semibold text-slate-600">Giờ cao điểm (nhiều nhất)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-[#06b6d4]"></span>
+          <span className="text-xs font-semibold text-slate-600">Bình thường</span>
+        </div>
+      </div>
+      <div
+        ref={chartRef}
+        onMouseMove={handleMouseMove}
+        className="w-full flex-1 min-h-[300px] overflow-x-auto"
+      >
+        <div style={{ minWidth: "580px", height: "100%" }} className="pr-16 pb-4 pt-2">
+          <ReactApexChart
+            options={options}
+            series={series}
+            type="bar"
+            height="100%"
+            width="100%"
+          />
+        </div>
       </div>
     </div>
   );
@@ -309,7 +375,7 @@ export const ResponseRateDonut = memo(({ answered = 0, refused = 0 }) => {
         fontFamily: "Inter, sans-serif",
       },
       labels: ["Trả lời được", "Từ chối"],
-      colors: ["#10b981", "#f43f5e"],
+      colors: ["#4f46e5", "#ec4899"],
       plotOptions: {
         pie: {
           donut: {
@@ -364,6 +430,7 @@ export const ResponseRateDonut = memo(({ answered = 0, refused = 0 }) => {
 
 // 5. Biểu đồ FAQ (PeakHourChart)
 export const PeakHourChart = memo(({ data = [] }) => {
+  const { chartRef, handleMouseMove } = useTooltipFix();
   // 1. Clean Series Mapping
   const series = useMemo(
     () => [
@@ -384,14 +451,14 @@ export const PeakHourChart = memo(({ data = [] }) => {
     () => ({
       chart: {
         id: "faq-daily-trend-chart",
-        stacked: true, // Giữ stacked để gộp cột
+        stacked: false, // Bỏ stacked để hiển thị dạng cọt cơ bản
         toolbar: { show: false },
         fontFamily: "Inter, sans-serif",
         sparkline: { enabled: false },
       },
       // Thêm tiêu đề đồng bộ với các biểu đồ khác
       title: {
-        text: "XU HƯỚNG CÂU HỎI THEO NGÀY",
+        text: "Mức độ bao phủ câu hỏi theo thời gian",
         align: "left",
         style: {
           fontSize: "11px",
@@ -400,19 +467,17 @@ export const PeakHourChart = memo(({ data = [] }) => {
           fontFamily: "Inter, sans-serif",
         },
       },
-      colors: ["#10b981", "#f43f5e"],
+      colors: ["#14b8a6", "#eab308"],
       plotOptions: {
         bar: {
-          columnWidth: "50%",
-          // Chỉnh borderRadiusApplication thành 'end' để chỉ bo góc trên cùng của cột tổng
+          columnWidth: "60%",
           borderRadius: 4,
-          borderRadiusApplication: "end",
         },
       },
       // Loại bỏ đường viền giữa các phần trong cùng 1 cột để nhìn "liền" hơn
       stroke: {
         show: true,
-        width: 0,
+        width: 1,
         colors: ["transparent"],
       },
       dataLabels: { enabled: false },
@@ -440,15 +505,7 @@ export const PeakHourChart = memo(({ data = [] }) => {
         strokeDashArray: 4,
         padding: { top: 10, bottom: 0 },
       },
-      legend: {
-        show: true,
-        position: "top",
-        horizontalAlign: "right",
-        fontSize: "11px",
-        fontWeight: 700,
-        labels: { colors: "#64748b" },
-        markers: { radius: 12 },
-      },
+      legend: { show: false }, // Đã tạo custom legend riêng ở HTML
       tooltip: {
         shared: true, // Gộp dữ liệu khi hover
         intersect: false,
@@ -463,18 +520,34 @@ export const PeakHourChart = memo(({ data = [] }) => {
     return <EmptyState message="Không có dữ liệu xu hướng câu hỏi hàng ngày" />;
   }
 
-  const minChartWidth = data.length > 7 ? data.length * 45 : "100%";
+  const minChartWidth = data.length > 7 ? data.length * 45 + 80 : "100%";
 
   return (
-    <div className="w-full h-full min-h-[300px] overflow-x-auto overflow-y-hidden">
-      <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }}>
-        <ReactApexChart
-          options={options}
-          series={series}
-          type="bar"
-          height="100%"
-          width="100%"
-        />
+    <div className="w-full h-full flex flex-col">
+      <div className="flex justify-end gap-4 mb-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-[#14b8a6]"></span>
+          <span className="text-xs font-semibold text-slate-600">KB có dữ liệu</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-[#eab308]"></span>
+          <span className="text-xs font-semibold text-slate-600">KB thiếu</span>
+        </div>
+      </div>
+      <div
+        ref={chartRef}
+        onMouseMove={handleMouseMove}
+        className="w-full flex-1 overflow-x-auto min-h-[300px]"
+      >
+        <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }} className="pr-16 pb-4 pt-2">
+          <ReactApexChart
+            options={options}
+            series={series}
+            type="bar"
+            height="100%"
+            width="100%"
+          />
+        </div>
       </div>
     </div>
   );

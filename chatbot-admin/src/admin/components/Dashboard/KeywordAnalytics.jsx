@@ -38,11 +38,7 @@ const KeywordChart = ({ title, data = [], color }) => {
       },
     },
     dataLabels: {
-      enabled: true,
-      textAnchor: "start",
-      style: { fontSize: "11px", fontWeight: 800, colors: ["#475569"] },
-      offsetX: 10,
-      formatter: (val) => val.toLocaleString(),
+      enabled: false,
     },
     xaxis: {
       categories: data.map((item) => item.keyword),

@@ -152,23 +152,23 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {showSkeleton
               ? Array(5)
-                  .fill(0)
-                  .map((_, i) => <StatCard key={i} loading={true} />)
+                .fill(0)
+                .map((_, i) => <StatCard key={i} loading={true} />)
               : kpiCards.map((kpi, idx) => (
-                  <StatCard key={idx} {...kpi} loading={false} />
-                ))}
+                <StatCard key={idx} {...kpi} loading={false} />
+              ))}
           </div>
 
           {/* CHARTS SECTION 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <ChartCard title="Xu hướng hỏi đáp" iconColor="bg-blue-500">
+            <ChartCard title="Lưu lượng truy vấn hàng ngày" iconColor="bg-emerald-500">
               {showSkeleton ? (
                 <Skeleton height={300} borderRadius={12} />
               ) : (
                 <DailyTrendChart data={data.kpis.daily || []} />
               )}
             </ChartCard>
-            <ChartCard title="Hiệu suất trả lời" iconColor="bg-indigo-500">
+            <ChartCard title="Tỉ lệ hiểu ý định người dùng (%)" iconColor="bg-violet-500">
               {showSkeleton ? (
                 <Skeleton height={300} borderRadius={12} />
               ) : (
@@ -180,7 +180,7 @@ const Dashboard = () => {
           {/* CHARTS SECTION 2 */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <ChartCard title="Giờ cao điểm (VN)" iconColor="bg-orange-500">
+              <ChartCard title="Thống kê thời gian tương tác (24h)" iconColor="bg-amber-500">
                 {showSkeleton ? (
                   <Skeleton height={300} borderRadius={12} />
                 ) : (
@@ -188,7 +188,7 @@ const Dashboard = () => {
                 )}
               </ChartCard>
             </div>
-            <ChartCard title="Tỉ lệ phản hồi" iconColor="bg-emerald-500">
+            <ChartCard title="Thống kê mức độ hoàn thành" iconColor="bg-indigo-600">
               {showSkeleton ? (
                 <div className="flex justify-center items-center h-[300px]">
                   <Skeleton circle height={200} width={200} />
