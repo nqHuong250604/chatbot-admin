@@ -32,7 +32,7 @@ const FileImport = () => {
 
         <div className="space-y-1">
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Import dữ liệu hàng loạt
+            Import câu hỏi – câu trả lời từ file
           </h2>
           <p className="text-slate-500 text-sm mt-1 font-medium leading-relaxed ml-0">
             Hỗ trợ <span className="text-emerald-500 font-bold">CSV, XLSX</span>{" "}
@@ -79,11 +79,10 @@ const FileImport = () => {
           <HelpCircle size={14} className="text-slate-300" />
         </label>
         <div
-          className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center transition-all cursor-pointer ${
-            file
-              ? "border-blue-400 bg-blue-50/30"
-              : "border-slate-200 bg-slate-50/50 hover:bg-blue-50/30 hover:border-blue-300"
-          }`}
+          className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center transition-all cursor-pointer ${file
+            ? "border-blue-400 bg-blue-50/30"
+            : "border-slate-200 bg-slate-50/50 hover:bg-blue-50/30 hover:border-blue-300"
+            }`}
           onClick={() => document.getElementById("file-input").click()}
         >
           <input

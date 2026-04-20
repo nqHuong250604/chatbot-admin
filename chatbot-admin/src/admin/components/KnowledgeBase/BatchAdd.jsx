@@ -47,7 +47,7 @@ const BatchAdd = () => {
       console.error("BatchAdd Error:", error);
       toast.error(
         error.response?.data?.message ||
-          "Gửi dữ liệu thất bại, vui lòng thử lại!",
+        "Gửi dữ liệu thất bại, vui lòng thử lại!",
       );
     } finally {
       setLoading(false);
@@ -62,7 +62,7 @@ const BatchAdd = () => {
         </div>
         <div className="space-y-1">
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Nhập hàng loạt Q&A
+            Nhập nhiều cặp Q&A
           </h2>
           <p className="text-slate-500 text-sm mt-1 font-medium leading-relaxed">
             Thêm nhiều cặp câu hỏi - câu trả lời và gửi đi xử lý trong một lần.
@@ -165,11 +165,10 @@ const BatchAdd = () => {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className={`w-full py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-100 ${
-            loading
-              ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
-              : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99]"
-          }`}
+          className={`w-full py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-100 ${loading
+            ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
+            : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99]"
+            }`}
         >
           <Send size={18} />
           {loading ? "Đang xử lý..." : `Gửi ${items.length} cặp Q&A sang n8n`}
