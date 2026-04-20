@@ -118,9 +118,9 @@ const KBList = () => {
                 <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">
                   Nội dung
                 </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100 text-right">
+                {/* <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100 text-right">
                   Thao tác
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -143,14 +143,14 @@ const KBList = () => {
                         {item.content}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    {/* <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        // onClick={() => handleDelete(item.id)}
                         className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                       >
                         <Trash2 size={16} />
                       </button>
-                    </td>
+                    </td> */}
                   </tr>
                 ))
               ) : (
@@ -169,7 +169,7 @@ const KBList = () => {
       </div>
 
       {/* QUICK DELETE */}
-      <div className="bg-white p-8 rounded-3xl border border-red-100 shadow-xl shadow-red-500/5 flex flex-col md:flex-row items-center justify-between gap-6">
+      {/* <div className="bg-white p-8 rounded-3xl border border-red-100 shadow-xl shadow-red-500/5 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
             <AlertCircle size={24} />
@@ -205,13 +205,13 @@ const KBList = () => {
             </button>
           </div>
           <button
-            onClick={() => handleDelete()}
+            // onClick={() => handleDelete()}
             className="px-8 py-3.5 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all"
           >
             Xác nhận xóa
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

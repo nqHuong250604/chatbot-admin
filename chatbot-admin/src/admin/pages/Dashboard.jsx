@@ -248,13 +248,13 @@ const Dashboard = () => {
             ) : (
               <RefusedQuestions questions={data.faqAnalysis.missing || []} />
             )}
-            {showSkeleton ? (
+            {/* {showSkeleton ? (
               <div className="bg-white p-6 rounded-xl border">
                 <Skeleton height={400} />
               </div>
             ) : (
               <ChatSessionHistory sessions={data.sessions} />
-            )}
+            )} */}
           </div>
         </div>
 

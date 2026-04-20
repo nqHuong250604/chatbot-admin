@@ -22,11 +22,6 @@ const KnowledgeManagement = () => {
       label: "Xem và quản lý KB",
       path: "/admin/knowledge-base/list",
     },
-    {
-      id: "guide",
-      label: "Hướng dẫn n8n",
-      path: "/admin/knowledge-base/guide",
-    },
   ];
 
   // Tìm tab hiện tại để làm breadcrumb (Source)
@@ -79,11 +74,10 @@ const KnowledgeManagement = () => {
               <Link
                 key={tab.id}
                 to={tab.path}
-                className={`px-6 py-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all relative ${
-                  isActive
-                    ? "text-blue-600"
-                    : "text-slate-400 hover:text-slate-600"
-                }`}
+                className={`px-6 py-3 text-[11px] font-black uppercase tracking-[0.15em] transition-all relative ${isActive
+                  ? "text-blue-600"
+                  : "text-slate-400 hover:text-slate-600"
+                  }`}
               >
                 {tab.label}
                 {isActive && (
