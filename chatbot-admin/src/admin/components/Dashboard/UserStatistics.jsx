@@ -37,7 +37,7 @@ const UserSessionsChart = memo(({ data = [] }) => {
         },
         title: {
           text: "Đơn vị: Số phiên chat",
-          offsetY: 15,
+          offsetY: 10,
           style: {
             color: "#94a3b8",
             fontSize: "10px",
