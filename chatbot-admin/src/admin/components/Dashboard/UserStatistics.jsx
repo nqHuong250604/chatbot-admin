@@ -8,7 +8,7 @@ const UserSessionsChart = memo(({ data = [] }) => {
   const series = useMemo(
     () => [
       {
-        name: "Phiên chat",
+        name: "Số phiên chat",
         data: data.map((u) => Number(u.sessions || 0)),
       },
     ],
@@ -21,7 +21,7 @@ const UserSessionsChart = memo(({ data = [] }) => {
         id: "user-sessions-bar-chart",
         type: "bar",
         toolbar: { show: false },
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "'Be Vietnam Pro', sans-serif",
       },
       plotOptions: {
         bar: { horizontal: true, borderRadius: 6, barHeight: "60%" },
@@ -31,28 +31,56 @@ const UserSessionsChart = memo(({ data = [] }) => {
         enabled: false,
       },
       xaxis: {
-        // GIỮ NGUYÊN HỌ TÊN ĐẦY ĐỦ
         categories: data.map((u) => u.full_name || "N/A"),
         labels: {
           style: { colors: "#94a3b8", fontSize: "10px", fontWeight: 600 },
+        },
+        title: {
+          text: "Đơn vị: Số phiên chat",
+          offsetY: 15,
+          style: {
+            color: "#94a3b8",
+            fontSize: "10px",
+            fontWeight: 700,
+            fontFamily: "Inter, sans-serif",
+          },
         },
       },
       yaxis: {
         labels: {
           style: { colors: "#64748b", fontSize: "10px", fontWeight: 700 },
-          maxWidth: 150, // Tăng độ rộng để hiển thị đủ họ tên
+          maxWidth: 150,
         },
       },
       grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
       tooltip: { theme: "light", y: { formatter: (val) => `${val} phiên` } },
       title: {
-        text: "TOP NHÂN VIÊN GIAO TIẾP NHIỀU NHẤT",
+        text: "TOP NHÂN VIÊN GIAO TIẾP NHIỀU NHẤT (PHIÊN CHAT)",
         style: {
-          fontSize: "11px",
-          color: "#94a3b8",
+          fontSize: "12px",
+          color: "#334155",
           fontWeight: 800,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "'Be Vietnam Pro', sans-serif",
         },
+      },
+      subtitle: {
+        align: "left",
+        margin: 0,
+        offsetX: 0,
+        offsetY: 15,
+        style: {
+          fontSize: "10px",
+          color: "#64748b",
+          fontWeight: 700,
+          fontFamily: "'Be Vietnam Pro', sans-serif",
+        },
+      },
+      legend: {
+        show: true,
+        position: "top",
+        horizontalAlign: "right",
+        fontSize: "10px",
+        fontWeight: 700,
       },
     }),
     [data],
@@ -83,22 +111,21 @@ const UserActivityChart = memo(({ data = [] }) => {
         type: "bar",
         stacked: false,
         toolbar: { show: false },
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "'Be Vietnam Pro', sans-serif",
       },
       colors: ["#334155", "#fb923c"],
       dataLabels: { enabled: false },
       plotOptions: { bar: { columnWidth: "40%", borderRadius: 4 } },
       xaxis: {
-        // GIỮ NGUYÊN HỌ TÊN ĐẦY ĐỦ
         categories: data.map((u) => u.full_name || "N/A"),
         labels: {
-          rotate: -45, // Xoay nhẹ nếu tên quá dài để tránh đè nhau
-          style: { colors: "#94a3b8", fontSize: "10px", fontWeight: 600 },
+          rotate: -45,
+          style: { colors: "#64748b", fontSize: "10px", fontWeight: 600 },
         },
       },
       yaxis: {
         labels: {
-          style: { colors: "#94a3b8", fontSize: "10px" },
+          style: { colors: "#64748b", fontSize: "10px" },
           formatter: (val) => Math.floor(val),
         },
       },
@@ -118,10 +145,10 @@ const UserActivityChart = memo(({ data = [] }) => {
       title: {
         text: "CHI TIẾT HOẠT ĐỘNG",
         style: {
-          fontSize: "11px",
-          color: "#94a3b8",
+          fontSize: "12px",
+          color: "#334155",
           fontWeight: 800,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "'Be Vietnam Pro', sans-serif",
         },
       },
     }),
@@ -162,13 +189,13 @@ const MiniStat = memo(
           </div>
         </div>
         <div>
-          <p className="text-[10px] font-bold uppercase text-slate-400 tracking-tight mb-1">
+          <p className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider mb-1">
             {label}
           </p>
-          <p className="text-lg font-black text-slate-800 leading-none mb-1">
+          <p className="text-xl font-black text-slate-800 leading-none mb-1">
             {value}
           </p>
-          <span className={`text-[9px] font-bold ${unitColor} uppercase`}>
+          <span className={`text-[10px] font-bold ${unitColor} uppercase tracking-tight`}>
             {unit}
           </span>
         </div>
@@ -282,9 +309,9 @@ const UserStatistics = ({ userData = [] }) => {
                   <th className="p-4 font-bold text-center">Mã bí mật</th>
                   <th className="p-4 font-bold text-center">Phòng ban</th>
                   <th className="p-4 font-bold text-center">Role</th>
-                  <th className="p-4 font-bold text-center">Phiên chat</th>
+                  {/* <th className="p-4 font-bold text-center">Phiên chat</th>
                   <th className="p-4 font-bold text-center">Tổng câu hỏi</th>
-                  <th className="p-4 font-bold text-center">Lượt gọi FAQ</th>
+                  <th className="p-4 font-bold text-center">Lượt gọi FAQ</th> */}
                   <th className="p-4 font-bold text-center">TB hỏi/phiên</th>
                   <th className="p-4 font-bold text-center">Số ngày sử dụng</th>
                   <th className="p-4 font-bold text-center">Lần đầu</th>
@@ -310,11 +337,11 @@ const UserStatistics = ({ userData = [] }) => {
                         {user.role || "guest"}
                       </span>
                     </td>
-                    <td className="p-4 text-center">{user.sessions}</td>
+                    {/* <td className="p-4 text-center">{user.sessions}</td>
                     <td className="p-4 text-center">{user.total_questions}</td>
                     <td className="p-4 text-center text-emerald-600 font-bold">
                       {user.faq_calls}
-                    </td>
+                    </td> */}
                     <td className="p-4 text-center">
                       {(
                         Number(user.total_questions) /

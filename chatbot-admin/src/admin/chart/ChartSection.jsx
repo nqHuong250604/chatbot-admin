@@ -61,7 +61,7 @@ export const DailyTrendChart = memo(({ data }) => {
         type: "bar",
         stacked: false, // Chuyển thành biểu đồ cột đứng (Basic Column)
         toolbar: { show: false },
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "'Be Vietnam Pro', sans-serif",
         animations: { enabled: true, easing: "easeinout", speed: 800 },
       },
       colors: ["#10b981", "#e11d48"], // Xanh cho thành công, Đỏ Ruby cho từ chối
@@ -75,12 +75,12 @@ export const DailyTrendChart = memo(({ data }) => {
           d.date_vn ? dayjs(d.date_vn).format("DD/MM") : "",
         ),
         labels: {
-          style: { colors: "#94a3b8", fontSize: "10px", fontWeight: 600 },
+          style: { colors: "#64748b", fontSize: "10px", fontWeight: 600 },
         },
       },
       yaxis: {
         labels: {
-          style: { colors: "#94a3b8", fontSize: "10px" },
+          style: { colors: "#64748b", fontSize: "10px" },
           formatter: (val) => Math.floor(val),
         },
       },
@@ -461,10 +461,10 @@ export const PeakHourChart = memo(({ data = [] }) => {
         text: "Mức độ bao phủ câu hỏi theo thời gian",
         align: "left",
         style: {
-          fontSize: "11px",
-          color: "#94a3b8",
+          fontSize: "12px",
+          color: "#334155",
           fontWeight: 800,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "'Be Vietnam Pro', sans-serif",
         },
       },
       colors: ["#14b8a6", "#eab308"],

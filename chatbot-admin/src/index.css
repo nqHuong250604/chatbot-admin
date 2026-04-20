@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@layer base {
+  body {
+    @apply font-sans text-slate-900 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
 main {
-    padding: 0;
+  padding: 0;
 }

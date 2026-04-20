@@ -32,10 +32,10 @@ const MiniStat = memo(({ label, value, barColor, icon, description }) => (
         </div>
       </div>
       <div>
-        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-tight">
+        <p className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">
           {label}
         </p>
-        <p className="text-xl font-black text-slate-800">{value}</p>
+        <p className="text-xl font-black text-slate-800 tracking-tight">{value}</p>
       </div>
     </div>
   </div>
@@ -68,7 +68,7 @@ const KBAnalysis = ({ data }) => {
   // 3. Đưa chartOptions vào useMemo để tránh việc ApexCharts khởi tạo lại liên tục
   const chartOptions = useMemo(
     () => ({
-      chart: { id: "kb-donut-analysis", fontFamily: "Inter, sans-serif" },
+      chart: { id: "kb-donut-analysis", fontFamily: "'Be Vietnam Pro', sans-serif" },
       labels: ["KB có dữ liệu", "KB thiếu / lỗi"],
       colors: ["#10b981", "#f43f5e"],
       stroke: { show: false },
@@ -147,7 +147,7 @@ const KBAnalysis = ({ data }) => {
       </section>
 
       <footer className="relative flex-1 flex flex-col items-center justify-center min-h-[250px]">
-        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest absolute top-0 left-0">
+        <h3 className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest absolute top-0 left-0">
           Tỷ lệ câu hỏi được trả lời thành công (%)
         </h3>
         <div className="w-full pt-6">

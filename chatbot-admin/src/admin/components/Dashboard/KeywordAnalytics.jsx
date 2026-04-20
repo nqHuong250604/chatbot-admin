@@ -14,7 +14,7 @@ const KeywordChart = ({ title, data = [], color }) => {
     chart: {
       type: "bar",
       toolbar: { show: false },
-      fontFamily: "Inter, sans-serif",
+      fontFamily: "'Be Vietnam Pro', sans-serif",
     },
     plotOptions: {
       bar: {
@@ -48,7 +48,7 @@ const KeywordChart = ({ title, data = [], color }) => {
     },
     yaxis: {
       labels: {
-        style: { colors: "#1e293b", fontSize: "11px", fontWeight: 700 },
+        style: { colors: "#334155", fontSize: "11px", fontWeight: 700 },
       },
     },
     grid: { show: false },
@@ -63,7 +63,7 @@ const KeywordChart = ({ title, data = [], color }) => {
           className={`w-1 h-4 rounded-full`}
           style={{ backgroundColor: color }}
         ></div>
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+        <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">
           {title}
         </h4>
       </div>
@@ -96,7 +96,7 @@ const KeywordAnalytics = ({ keywords }) => {
           <h3 className="text-lg font-bold text-slate-800 leading-tight">
             Phân tích từ khóa phổ biến
           </h3>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mt-1">
+          <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] mt-1">
             Dữ liệu xu hướng từ câu hỏi của người dùng
           </p>
         </div>
