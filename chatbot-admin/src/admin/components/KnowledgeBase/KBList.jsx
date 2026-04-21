@@ -14,14 +14,14 @@ import { toast } from "react-hot-toast";
 const KBList = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filterVersion, setFilterVersion] = useState("Tất cả");
+  const [filterVersion, setFilterVersion] = useState("v5");
   const [deleteId, setDeleteId] = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params = {
-        version: filterVersion === "Tất cả" ? null : filterVersion,
+        version: filterVersion,
         limit: 100,
       };
       const res = await kbService.getList(params);
@@ -42,7 +42,7 @@ const KBList = () => {
     if (!targetId) return toast.error("Vui lòng nhập hoặc chọn ID!");
 
     // Nếu không truyền version từ hàng (ví dụ dùng ô nhập nhanh), lấy từ bộ lọc hiện tại
-    const targetVersion = version || (filterVersion === "Tất cả" ? "v2" : filterVersion);
+    const targetVersion = version || filterVersion;
 
     if (
       !window.confirm(
@@ -90,7 +90,6 @@ const KBList = () => {
                 value={filterVersion}
                 onChange={(e) => setFilterVersion(e.target.value)}
               >
-                <option value="Tất cả">Tất cả phiên bản</option>
                 <option value="v2">v2 (Product)</option>
                 <option value="v5">v5 (Toán)</option>
                 <option value="v6">v6 (Tiếng Việt)</option>
