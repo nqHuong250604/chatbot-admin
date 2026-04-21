@@ -50,7 +50,6 @@ from analytics import (
 load_dotenv()
 
 VN_TZ = timezone(timedelta(hours=7))
-INTERNAL_EMAIL_DOMAIN = os.getenv("INTERNAL_EMAIL_DOMAIN", "@trangnguyen.edu.vn").strip().lower()
 SUPABASE_USERS_TABLE = os.getenv("SUPABASE_USERS_TABLE", "users").strip() or "users"
 OTP_TTL_MINUTES = int(os.getenv("OTP_TTL_MINUTES", "10").strip('"') or "10")
 OTP_RESEND_SECONDS = int(os.getenv("OTP_RESEND_SECONDS", "60").strip('"') or "60")
@@ -98,7 +97,7 @@ def get_client():
 
 
 class AuthOtpRequest(BaseModel):
-    email: str = Field(..., description="Email admin noi bo")
+    email: str = Field(..., description="Email admin")
 
 
 class AuthOtpVerifyRequest(BaseModel):
@@ -119,10 +118,6 @@ def ensure_valid_email(email: str) -> str:
     if not normalized or "@" not in normalized or "." not in normalized.rsplit("@", 1)[-1]:
         raise HTTPException(status_code=400, detail="Email khong hop le")
     return normalized
-
-
-def is_internal_email(email: str) -> bool:
-    return normalize_email(email).endswith(INTERNAL_EMAIL_DOMAIN)
 
 
 def now_vn() -> datetime:
@@ -1178,12 +1173,9 @@ def request_admin_otp(body: AuthOtpRequest):
     """
     Gui OTP dang nhap dashboard.
 
-    Dieu kien: email noi bo, ton tai trong bang users, va role = admin.
+    Dieu kien: email ton tai trong bang users va role = admin.
     """
     email = ensure_valid_email(body.email)
-    if not is_internal_email(email):
-        raise HTTPException(status_code=403, detail=f"Chi email noi bo {INTERNAL_EMAIL_DOMAIN} moi duoc dang nhap")
-
     profile = fetch_admin_user(email)
     current_time = now_vn()
     existing = OTP_STORE.get(email)
