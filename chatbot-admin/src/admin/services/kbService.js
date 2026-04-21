@@ -22,6 +22,7 @@ export const kbService = {
     });
   },
 
-  // Xóa bản ghi theo ID
-  delete: (docId) => axiosClient.delete(`${KB_PREFIX}/${docId}`),
+  // Xóa bản ghi theo ID (Cần truyền thêm version để xác định đúng bảng)
+  delete: (docId, version) =>
+    axiosClient.delete(`${KB_PREFIX}/${docId}`, { params: { version } }),
 };

@@ -37,18 +37,22 @@ const KBList = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, version) => {
     const targetId = id || deleteId;
     if (!targetId) return toast.error("Vui lòng nhập hoặc chọn ID!");
+
+    // Nếu không truyền version từ hàng (ví dụ dùng ô nhập nhanh), lấy từ bộ lọc hiện tại
+    const targetVersion = version || (filterVersion === "Tất cả" ? "v2" : filterVersion);
+
     if (
       !window.confirm(
-        `Hành động này không thể hoàn tác. Xóa bản ghi #${targetId}?`,
+        `Hành động này không thể hoàn tác. Xóa bản ghi #${targetId} (${targetVersion})?`,
       )
     )
       return;
 
     try {
-      const res = await kbService.delete(targetId);
+      const res = await kbService.delete(targetId, targetVersion);
       toast.success(res.message || "Đã xóa bản ghi thành công");
       if (!id) setDeleteId("");
       fetchData();
@@ -118,9 +122,9 @@ const KBList = () => {
                 <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">
                   Nội dung
                 </th>
-                {/* <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100 text-right">
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100 text-right">
                   Thao tác
-                </th> */}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -135,7 +139,7 @@ const KBList = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase border border-blue-100">
-                        {item.metadata?.phan_loai || "v2"}
+                        {item.version || "v2"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-slate-600 text-sm max-w-[500px]">
@@ -143,14 +147,14 @@ const KBList = () => {
                         {item.content}
                       </div>
                     </td>
-                    {/* <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right">
                       <button
-                        // onClick={() => handleDelete(item.id)}
-                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        onClick={() => handleDelete(item.id, item.version)}
+                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
                       >
                         <Trash2 size={16} />
                       </button>
-                    </td> */}
+                    </td>
                   </tr>
                 ))
               ) : (
@@ -187,7 +191,7 @@ const KBList = () => {
               onClick={() =>
                 setDeleteId((prev) => Math.max(0, Number(prev) - 1))
               }
-              className="p-2.5 text-slate-400"
+              className="p-2.5 text-slate-400 cursor-pointer"
             >
               <Minus size={16} />
             </button>
@@ -196,17 +200,18 @@ const KBList = () => {
               value={deleteId}
               onChange={(e) => setDeleteId(e.target.value)}
               className="w-20 bg-transparent text-center font-black text-slate-800 outline-none"
+              placeholder="ID"
             />
             <button
               onClick={() => setDeleteId((prev) => Number(prev) + 1)}
-              className="p-2.5 text-slate-400"
+              className="p-2.5 text-slate-400 cursor-pointer"
             >
               <Plus size={16} />
             </button>
           </div>
           <button
-            // onClick={() => handleDelete()}
-            className="px-8 py-3.5 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all"
+            onClick={() => handleDelete()}
+            className="px-8 py-3.5 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all cursor-pointer"
           >
             Xác nhận xóa
           </button>

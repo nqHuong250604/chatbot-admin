@@ -11,8 +11,10 @@ import {
   Database,
 } from "lucide-react";
 import logo from "../../assets/logo.svg";
+import { useAuth } from "../components/Auth/AuthContext";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
+  const { logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
@@ -173,7 +175,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </NavLink>
 
             <button
-              onClick={() => console.log("Logout...")}
+              onClick={logout}
               className={`${baseStyle} text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer w-full`}
             >
               <LogOut size={22} className="shrink-0" />

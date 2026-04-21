@@ -5,7 +5,7 @@ Dành cho Frontend tích hợp
 Chạy:
     # Set credentials trước
     set SUPABASE_URL=https://your-project.supabase.co
-    set SUPABASE_KEY=your-anon-key
+    set SUPABASE_KEY=your-anon-key  
 
     # Chạy API
     uvicorn api:app --host 0.0.0.0 --port 8000 --reload
@@ -15,16 +15,20 @@ Docs: http://localhost:8000/docs
 from __future__ import annotations
 
 import os
+import random
+import re
+import smtplib
+import uuid
 from calendar import monthrange
-from datetime import date, datetime
-from typing import Optional
-import time
-import threading
+from datetime import date, datetime, timedelta, timezone
+from email.message import EmailMessage
+from typing import Any, Optional
 
 import pandas as pd
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 from supabase import create_client
 
 from analytics import (
@@ -45,6 +49,16 @@ from analytics import (
 # ── App ───────────────────────────────────────────────────────
 load_dotenv()
 
+VN_TZ = timezone(timedelta(hours=7))
+INTERNAL_EMAIL_DOMAIN = os.getenv("INTERNAL_EMAIL_DOMAIN", "@trangnguyen.edu.vn").strip().lower()
+SUPABASE_USERS_TABLE = os.getenv("SUPABASE_USERS_TABLE", "users").strip() or "users"
+OTP_TTL_MINUTES = int(os.getenv("OTP_TTL_MINUTES", "10").strip('"') or "10")
+OTP_RESEND_SECONDS = int(os.getenv("OTP_RESEND_SECONDS", "60").strip('"') or "60")
+AUTH_SESSION_TTL_HOURS = int(os.getenv("AUTH_SESSION_TTL_HOURS", "12").strip('"') or "12")
+
+OTP_STORE: dict[str, dict[str, Any]] = {}
+AUTH_SESSIONS: dict[str, dict[str, Any]] = {}
+
 app = FastAPI(
     title="Trạng Nguyên AI — Dashboard API",
     description="API cung cấp dữ liệu thống kê chatbot nội bộ cho Frontend",
@@ -54,7 +68,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],   # Đổi thành domain FE cụ thể khi production
-    allow_methods=["GET", "POST", "DELETE"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -69,6 +83,157 @@ def get_client():
             detail="Thiếu biến môi trường SUPABASE_URL hoặc SUPABASE_KEY"
         )
     return create_client(url, key)
+
+
+class AuthOtpRequest(BaseModel):
+    email: str = Field(..., description="Email admin noi bo")
+
+
+class AuthOtpVerifyRequest(BaseModel):
+    email: str = Field(..., description="Email da request OTP")
+    otp_code: str = Field(..., min_length=6, max_length=6, description="Ma OTP 6 chu so")
+
+
+def normalize_email(value: Any) -> str:
+    return str(value or "").strip().lower()
+
+
+def normalize_text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def ensure_valid_email(email: str) -> str:
+    normalized = normalize_email(email)
+    if not normalized or "@" not in normalized or "." not in normalized.rsplit("@", 1)[-1]:
+        raise HTTPException(status_code=400, detail="Email khong hop le")
+    return normalized
+
+
+def is_internal_email(email: str) -> bool:
+    return normalize_email(email).endswith(INTERNAL_EMAIL_DOMAIN)
+
+
+def now_vn() -> datetime:
+    return datetime.now(VN_TZ)
+
+
+def public_user_profile(profile: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": profile.get("id"),
+        "email": normalize_email(profile.get("email")),
+        "full_name": normalize_text(profile.get("full_name")) or None,
+        "department": normalize_text(profile.get("department")) or None,
+        "role": normalize_text(profile.get("role")).lower() or None,
+    }
+
+
+def fetch_admin_user(email: str) -> dict[str, Any]:
+    try:
+        response = (
+            get_client()
+            .table(SUPABASE_USERS_TABLE)
+            .select("id,email,full_name,department,role")
+            .ilike("email", email)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Khong kiem tra duoc Supabase users: {exc}") from exc
+
+    rows = response.data or []
+    if not rows:
+        raise HTTPException(status_code=403, detail="Email nay khong ton tai trong bang users")
+
+    profile = rows[0]
+    if normalize_text(profile.get("role")).lower() != "admin":
+        raise HTTPException(status_code=403, detail="Chi tai khoan co role admin moi duoc dang nhap dashboard")
+
+    return public_user_profile(profile)
+
+
+def generate_otp_code() -> str:
+    return f"{random.SystemRandom().randint(0, 999999):06d}"
+
+
+def read_env(name: str, default: str = "") -> str:
+    return os.getenv(name, default).strip().strip('"')
+
+
+def read_bool_env(name: str, default: bool = False) -> bool:
+    value = read_env(name, "true" if default else "false").lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def send_otp_email(email: str, code: str) -> None:
+    smtp_host = read_env("SMTP_HOST")
+    smtp_port = int(read_env("SMTP_PORT", "587") or "587")
+    smtp_username = read_env("SMTP_USERNAME")
+    smtp_password = read_env("SMTP_PASSWORD")
+    smtp_from_email = read_env("SMTP_FROM_EMAIL", smtp_username)
+    smtp_from_name = read_env("SMTP_FROM_NAME", "Trang Nguyen Dashboard")
+    smtp_use_tls = read_bool_env("SMTP_USE_TLS", True)
+    smtp_use_ssl = read_bool_env("SMTP_USE_SSL", False)
+
+    missing = [
+        name
+        for name, value in {
+            "SMTP_HOST": smtp_host,
+            "SMTP_USERNAME": smtp_username,
+            "SMTP_PASSWORD": smtp_password,
+            "SMTP_FROM_EMAIL": smtp_from_email,
+        }.items()
+        if not value
+    ]
+    if missing:
+        raise HTTPException(status_code=500, detail=f"Thieu cau hinh SMTP: {', '.join(missing)}")
+
+    message = EmailMessage()
+    message["Subject"] = "Ma xac thuc dang nhap Dashboard Trang Nguyen"
+    message["From"] = f"{smtp_from_name} <{smtp_from_email}>"
+    message["To"] = email
+    message.set_content(
+        "\n".join(
+            [
+                "Ma xac thuc dang nhap dashboard cua ban la:",
+                "",
+                code,
+                "",
+                f"Ma co hieu luc trong {OTP_TTL_MINUTES} phut.",
+                "Neu ban khong thuc hien dang nhap, hay bo qua email nay.",
+            ]
+        )
+    )
+
+    smtp_class = smtplib.SMTP_SSL if smtp_use_ssl else smtplib.SMTP
+    try:
+        with smtp_class(smtp_host, smtp_port, timeout=20) as server:
+            if smtp_use_tls and not smtp_use_ssl:
+                server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(message)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Khong the gui email OTP: {exc}") from exc
+
+
+def read_bearer_token(authorization: str | None) -> str:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Thieu header Authorization")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        raise HTTPException(status_code=401, detail="Authorization phai co dang Bearer <token>")
+    return token.strip()
+
+
+def require_admin_session(authorization: str | None = Header(default=None)) -> dict[str, Any]:
+    token = read_bearer_token(authorization)
+    session = AUTH_SESSIONS.get(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Session khong ton tai hoac da dang xuat")
+    expires_at = session.get("expires_at")
+    if not isinstance(expires_at, datetime) or now_vn() > expires_at:
+        AUTH_SESSIONS.pop(token, None)
+        raise HTTPException(status_code=401, detail="Session da het han")
+    return session
 
 
 # ── Helpers ───────────────────────────────────────────────────
@@ -107,24 +272,6 @@ def filter_params(
     return params
 
 
-# ── Global Cache Tối Ưu Tải ──────────────────────────────────
-_DATA_CACHE = {}
-_DATA_CACHE_TTL = 300 # 5 phút
-_CACHE_LOCK = threading.Lock()
-
-def get_cached_raw_df():
-    """Lấy dữ liệu thô từ DB, có cơ chế cache 5 phút để tránh 5 requests frontend đâm DB đồng thời."""
-    now = time.time()
-    
-    with _CACHE_LOCK:
-        if "df" in _DATA_CACHE and (now - _DATA_CACHE["time"] < _DATA_CACHE_TTL):
-            return _DATA_CACHE["df"].copy()
-        
-        df = fetch_raw(get_client())
-        _DATA_CACHE["df"] = df
-        _DATA_CACHE["time"] = time.time()
-        return df.copy()
-
 def load_and_filter(
     days: Optional[int] = None,
     selected_date: Optional[date] = None,
@@ -150,7 +297,7 @@ def load_and_filter(
             detail="start_date không được lớn hơn end_date",
         )
 
-    df = get_cached_raw_df()
+    df = fetch_raw(get_client())
     if df.empty:
         empty = pd.DataFrame()
         return df, empty, empty, empty, empty, empty, empty
@@ -605,6 +752,11 @@ from pydantic import BaseModel
 from typing import List
 
 VERSIONS = ["v2", "v5", "v6"]
+KB_TABLES = {
+    "v2": "documents_v2",
+    "v5": "documents_v5",
+    "v6": "documents_v6",
+}
 
 
 def get_n8n_url():
@@ -617,14 +769,17 @@ def get_n8n_url():
     return url
 
 
-def apply_kb_version_filter(query, version: str):
-    """Ho tro ca metadata.version va metadata.phan_loai cho du lieu KB cu."""
+def resolve_kb_table(version: str) -> str:
     normalized_version = version.strip().lower()
-    return query.or_(
-        f"metadata->>version.ilike.{normalized_version},metadata->>phan_loai.ilike.{normalized_version}"
-    )
+    table_name = KB_TABLES.get(normalized_version)
+    if not table_name:
+        raise HTTPException(
+            status_code=400,
+            detail=f"version phai la mot trong {VERSIONS}"
+        )
+    return table_name
 
-6
+
 def send_to_n8n(payload: dict) -> dict:
     """Gui payload den n8n webhook va tra ve ket qua."""
     try:
@@ -906,12 +1061,16 @@ async def kb_upload_file(
 
 @app.get("/api/kb/list", tags=["Quan ly KB"])
 def kb_list(
-    version: Optional[str] = Query(None, description="Loc theo version: v2 | v5 | v6"),
+    version: str = Query(..., description="Version KB can doc: v2 | v5 | v6"),
     limit  : int           = Query(100,  description="So ban ghi tra ve"),
     page   : int           = Query(1,    description="Trang (bat dau tu 1)"),
 ):
     """
     Xem danh sach noi dung KB hien co trong Supabase.
+    Moi version doc tu mot bang rieng:
+    - v2 -> documents_v2
+    - v5 -> documents_v5
+    - v6 -> documents_v6
 
     **Response:**
     ```json
@@ -920,7 +1079,8 @@ def kb_list(
         {
           "id"      : 1,
           "content" : "Noi dung chunk...",
-          "metadata": {"version": "v5", "department": "Hoc vu"}
+          "metadata": {"department": "Hoc vu"},
+          "version": "v5"
         }
       ],
       "total": 50,
@@ -929,23 +1089,23 @@ def kb_list(
     }
     ```
     """
-    normalized_version = version.strip().lower() if version else None
-    if normalized_version and normalized_version not in VERSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"version phai la mot trong {VERSIONS}"
-        )
+    normalized_version = version.strip().lower()
+    table_name = resolve_kb_table(normalized_version)
     try:
         offset = (page - 1) * limit
-        q = get_client().table("documents").select("id, content, metadata")
-        if normalized_version:
-            q = apply_kb_version_filter(q, normalized_version)
+        q = get_client().table(table_name).select("id, content, metadata")
         resp = q.order("id", desc=True).range(offset, offset + limit - 1).execute()
+        data = resp.data or []
+        for item in data:
+            item["version"] = normalized_version
+            item["table"] = table_name
         return {
-            "data" : resp.data or [],
-            "total": len(resp.data or []),
+            "data" : data,
+            "total": len(data),
             "page" : page,
             "limit": limit,
+            "version": normalized_version,
+            "table": table_name,
         }
     except HTTPException:
         raise
@@ -954,21 +1114,143 @@ def kb_list(
 
 
 @app.delete("/api/kb/{doc_id}", tags=["Quan ly KB"])
-def kb_delete(doc_id: int):
+def kb_delete(
+    doc_id: int,
+    version: str = Query(..., description="Version KB can xoa: v2 | v5 | v6"),
+):
     """
     Xoa 1 ban ghi khoi KB theo ID.
+    Vi KB da tach thanh 3 bang rieng, can truyen `version` de xoa dung bang.
 
     **Response:**
     ```json
-    {"status": "ok", "message": "Da xoa ban ghi ID 123"}
+    {"status": "ok", "message": "Da xoa ban ghi ID 123 trong documents_v5"}
     ```
     """
     try:
-        get_client().table("documents").delete().eq("id", doc_id).execute()
-        return {"status": "ok", "message": f"Da xoa ban ghi ID {doc_id}"}
+        normalized_version = version.strip().lower()
+        table_name = resolve_kb_table(normalized_version)
+        get_client().table(table_name).delete().eq("id", doc_id).execute()
+        return {
+            "status": "ok",
+            "message": f"Da xoa ban ghi ID {doc_id} trong {table_name}",
+            "id": doc_id,
+            "version": normalized_version,
+            "table": table_name,
+        }
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))
 
 
 # Sua allow_methods de cho phep POST va DELETE
 # (Update CORS o dau file neu can)
+
+
+# ═══════════════════════════════════════════════════════════════
+# AUTH ADMIN
+# ═══════════════════════════════════════════════════════════════
+
+@app.post("/api/auth/request-otp", tags=["Auth"])
+def request_admin_otp(body: AuthOtpRequest):
+    """
+    Gui OTP dang nhap dashboard.
+
+    Dieu kien: email noi bo, ton tai trong bang users, va role = admin.
+    """
+    email = ensure_valid_email(body.email)
+    if not is_internal_email(email):
+        raise HTTPException(status_code=403, detail=f"Chi email noi bo {INTERNAL_EMAIL_DOMAIN} moi duoc dang nhap")
+
+    profile = fetch_admin_user(email)
+    current_time = now_vn()
+    existing = OTP_STORE.get(email)
+    if existing and isinstance(existing.get("sent_at"), datetime):
+        elapsed = (current_time - existing["sent_at"]).total_seconds()
+        if elapsed < OTP_RESEND_SECONDS:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Vui long cho {OTP_RESEND_SECONDS - int(elapsed)}s truoc khi gui lai OTP",
+            )
+
+    code = generate_otp_code()
+    send_otp_email(email, code)
+    OTP_STORE[email] = {
+        "code": code,
+        "profile": profile,
+        "sent_at": current_time,
+        "expires_at": current_time + timedelta(minutes=OTP_TTL_MINUTES),
+        "attempts": 0,
+    }
+
+    return {
+        "ok": True,
+        "email": email,
+        "message": "Da gui ma OTP 6 chu so den email",
+        "ttl_minutes": OTP_TTL_MINUTES,
+        "resend_seconds": OTP_RESEND_SECONDS,
+    }
+
+
+@app.post("/api/auth/verify-otp", tags=["Auth"])
+def verify_admin_otp(body: AuthOtpVerifyRequest):
+    """
+    Xac thuc OTP va tra ve access token cho FE.
+
+    FE gui token trong header: Authorization: Bearer <access_token>
+    """
+    email = ensure_valid_email(body.email)
+    otp_code = normalize_text(body.otp_code)
+    if not re.match(r"^\d{6}$", otp_code):
+        raise HTTPException(status_code=400, detail="OTP phai gom 6 chu so")
+
+    record = OTP_STORE.get(email)
+    if not record:
+        raise HTTPException(status_code=400, detail="Chua request OTP hoac OTP da bi xoa")
+
+    if now_vn() > record["expires_at"]:
+        OTP_STORE.pop(email, None)
+        raise HTTPException(status_code=400, detail="OTP da het han")
+
+    record["attempts"] = int(record.get("attempts", 0)) + 1
+    if record["attempts"] > 5:
+        OTP_STORE.pop(email, None)
+        raise HTTPException(status_code=429, detail="Nhap sai OTP qua nhieu lan. Vui long request lai")
+
+    if otp_code != record["code"]:
+        raise HTTPException(status_code=400, detail="OTP khong dung")
+
+    token = uuid.uuid4().hex
+    expires_at = now_vn() + timedelta(hours=AUTH_SESSION_TTL_HOURS)
+    AUTH_SESSIONS[token] = {
+        "token": token,
+        "user": record["profile"],
+        "created_at": now_vn(),
+        "expires_at": expires_at,
+    }
+    OTP_STORE.pop(email, None)
+
+    return {
+        "ok": True,
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_at": expires_at.isoformat(),
+        "user": AUTH_SESSIONS[token]["user"],
+    }
+
+
+@app.get("/api/auth/session", tags=["Auth"])
+def get_auth_session(session: dict[str, Any] = Depends(require_admin_session)):
+    """Kiem tra token hien tai co con hop le khong."""
+    return {
+        "ok": True,
+        "user": session["user"],
+        "expires_at": session["expires_at"].isoformat(),
+    }
+
+
+@app.post("/api/auth/logout", tags=["Auth"])
+def logout_admin(authorization: str | None = Header(default=None)):
+    """Dang xuat token hien tai."""
+    token = read_bearer_token(authorization)
+    AUTH_SESSIONS.pop(token, None)
+    return {"ok": True, "message": "Da dang xuat"}

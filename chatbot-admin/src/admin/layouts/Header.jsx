@@ -8,8 +8,10 @@ import {
   LogOut,
   ChevronDown,
 } from "lucide-react";
+import { useAuth } from "../components/Auth/AuthContext";
 
 const Header = ({ toggleSidebar }) => {
+  const { user, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -60,15 +62,15 @@ const Header = ({ toggleSidebar }) => {
           >
             <div className="text-right hidden sm:block cursor-pointer">
               <p className="text-sm font-bold text-slate-900 leading-none">
-                Admin
+                {user?.full_name || "Admin"}
               </p>
               <p className="text-[11px] text-slate-400 font-bold uppercase mt-1 italic">
-                Trạng Nguyên
+                {user?.department || "Trạng Nguyên"}
               </p>
             </div>
             <div className="relative">
               <img
-                src="https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff"
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || "Admin")}&background=6366f1&color=fff`}
                 className="w-10 h-10 rounded-xl shadow-md border-2 border-white cursor-pointer"
                 alt="Avatar"
               />
@@ -88,7 +90,7 @@ const Header = ({ toggleSidebar }) => {
                   Tài khoản
                 </p>
                 <p className="text-sm font-medium text-slate-600 truncate">
-                  admin@trangnguyen.edu.vn
+                  {user?.email || "admin@trangnguyen.edu.vn"}
                 </p>
               </div>
 
@@ -101,7 +103,7 @@ const Header = ({ toggleSidebar }) => {
               <div className="h-[1px] bg-slate-50 my-1"></div>
 
               <button
-                onClick={() => console.log("Logout...")}
+                onClick={logout}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-colors"
               >
                 <LogOut size={16} /> Đăng xuất
