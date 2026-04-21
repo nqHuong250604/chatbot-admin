@@ -5,6 +5,7 @@ const axiosClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
   timeout: 60000,
 });
 
@@ -25,13 +26,15 @@ axiosClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      // Nếu hết hạn hoặc không hợp lệ -> Xóa token và reload (AuthContext sẽ xử lý redirect)
+      // Hết hạn hoặc token không hợp lệ -> Xóa toàn bộ session
       localStorage.removeItem("admin_token");
-      if (!window.location.pathname.startsWith("/login")) {
+      localStorage.removeItem("admin_user");
+
+      // Chỉ redirect nếu không phải đang ở trang login
+      if (!window.location.pathname.includes("/login")) {
         window.location.href = "/login";
       }
     }
-    console.error("API Error:", error.response?.data || error.message);
     return Promise.reject(error);
   },
 );

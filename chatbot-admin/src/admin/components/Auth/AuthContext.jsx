@@ -4,7 +4,15 @@ import { authService } from "../../services/authService";
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  // Load initial state from localStorage for immediate UI feedback
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem("admin_user");
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   // Kiểm tra session khi khởi tạo hoặc khi token thay đổi
@@ -12,6 +20,7 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("admin_token");
     if (!token) {
       setUser(null);
+      localStorage.removeItem("admin_user");
       setLoading(false);
       return;
     }
@@ -19,14 +28,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.checkSession();
       if (response && response.ok) {
+        // Cập nhật thông tin user mới nhất từ server
         setUser(response.user);
+        localStorage.setItem("admin_user", JSON.stringify(response.user));
       } else {
-        localStorage.removeItem("admin_token");
-        setUser(null);
+        throw new Error("Invalid session");
       }
     } catch (error) {
       console.error("Session validation failed:", error);
+      // Chỉ xóa user nếu backend trả về lỗi xác thực rõ rệt
       localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin_user");
       setUser(null);
     } finally {
       setLoading(false);
@@ -39,6 +51,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = (userData, token) => {
     localStorage.setItem("admin_token", token);
+    localStorage.setItem("admin_user", JSON.stringify(userData));
     setUser(userData);
   };
 
@@ -49,6 +62,7 @@ export const AuthProvider = ({ children }) => {
       console.error("Logout error:", error);
     } finally {
       localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin_user");
       setUser(null);
       window.location.href = "/login";
     }

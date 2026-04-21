@@ -5,7 +5,7 @@ Dành cho Frontend tích hợp
 Chạy:
     # Set credentials trước
     set SUPABASE_URL=https://your-project.supabase.co
-    set SUPABASE_KEY=your-anon-key  
+    set SUPABASE_KEY=your-anon-key
 
     # Chạy API
     uvicorn api:app --host 0.0.0.0 --port 8000 --reload
@@ -26,7 +26,7 @@ from typing import Any, Optional
 
 import pandas as pd
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from supabase import create_client
@@ -55,6 +55,17 @@ SUPABASE_USERS_TABLE = os.getenv("SUPABASE_USERS_TABLE", "users").strip() or "us
 OTP_TTL_MINUTES = int(os.getenv("OTP_TTL_MINUTES", "10").strip('"') or "10")
 OTP_RESEND_SECONDS = int(os.getenv("OTP_RESEND_SECONDS", "60").strip('"') or "60")
 AUTH_SESSION_TTL_HOURS = int(os.getenv("AUTH_SESSION_TTL_HOURS", "12").strip('"') or "12")
+AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "dashboard_access_token").strip().strip('"') or "dashboard_access_token"
+AUTH_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE", "false").strip().strip('"').lower() == "true"
+AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "lax").strip().strip('"').lower() or "lax"
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://localhost:5173,http://localhost:8000,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:8000",
+    ).split(",")
+    if origin.strip()
+]
 
 OTP_STORE: dict[str, dict[str, Any]] = {}
 AUTH_SESSIONS: dict[str, dict[str, Any]] = {}
@@ -67,7 +78,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Đổi thành domain FE cụ thể khi production
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -224,8 +236,19 @@ def read_bearer_token(authorization: str | None) -> str:
     return token.strip()
 
 
-def require_admin_session(authorization: str | None = Header(default=None)) -> dict[str, Any]:
-    token = read_bearer_token(authorization)
+def resolve_auth_token(authorization: str | None, cookie_token: str | None) -> str:
+    if authorization:
+        return read_bearer_token(authorization)
+    if cookie_token:
+        return cookie_token.strip()
+    raise HTTPException(status_code=401, detail="Chua dang nhap hoac thieu token")
+
+
+def require_admin_session(
+    authorization: str | None = Header(default=None),
+    cookie_token: str | None = Cookie(default=None, alias=AUTH_COOKIE_NAME),
+) -> dict[str, Any]:
+    token = resolve_auth_token(authorization, cookie_token)
     session = AUTH_SESSIONS.get(token)
     if not session:
         raise HTTPException(status_code=401, detail="Session khong ton tai hoac da dang xuat")
@@ -1192,7 +1215,7 @@ def request_admin_otp(body: AuthOtpRequest):
 
 
 @app.post("/api/auth/verify-otp", tags=["Auth"])
-def verify_admin_otp(body: AuthOtpVerifyRequest):
+def verify_admin_otp(body: AuthOtpVerifyRequest, response: Response):
     """
     Xac thuc OTP va tra ve access token cho FE.
 
@@ -1228,6 +1251,16 @@ def verify_admin_otp(body: AuthOtpVerifyRequest):
         "expires_at": expires_at,
     }
     OTP_STORE.pop(email, None)
+    response.set_cookie(
+        key=AUTH_COOKIE_NAME,
+        value=token,
+        max_age=AUTH_SESSION_TTL_HOURS * 3600,
+        expires=AUTH_SESSION_TTL_HOURS * 3600,
+        httponly=True,
+        secure=AUTH_COOKIE_SECURE,
+        samesite=AUTH_COOKIE_SAMESITE,
+        path="/",
+    )
 
     return {
         "ok": True,
@@ -1249,8 +1282,13 @@ def get_auth_session(session: dict[str, Any] = Depends(require_admin_session)):
 
 
 @app.post("/api/auth/logout", tags=["Auth"])
-def logout_admin(authorization: str | None = Header(default=None)):
+def logout_admin(
+    response: Response,
+    authorization: str | None = Header(default=None),
+    cookie_token: str | None = Cookie(default=None, alias=AUTH_COOKIE_NAME),
+):
     """Dang xuat token hien tai."""
-    token = read_bearer_token(authorization)
+    token = resolve_auth_token(authorization, cookie_token)
     AUTH_SESSIONS.pop(token, None)
+    response.delete_cookie(key=AUTH_COOKIE_NAME, path="/")
     return {"ok": True, "message": "Da dang xuat"}
