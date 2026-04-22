@@ -428,71 +428,66 @@ export const ResponseRateDonut = memo(({ answered = 0, refused = 0 }) => {
   );
 });
 
-// 5. Biểu đồ FAQ (PeakHourChart)
+// 5. Biểu đồ FAQ (PeakHourChart) - Đã sửa theo phiên bản v2, v5, v6
 export const PeakHourChart = memo(({ data = [] }) => {
-  const { chartRef, handleMouseMove } = useTooltipFix();
-  // 1. Clean Series Mapping
-  const series = useMemo(
-    () => [
-      {
-        name: "KB có dữ liệu",
-        data: data.map(({ answered }) => Number(answered || 0)),
-      },
-      {
-        name: "KB thiếu",
-        data: data.map(({ not_answered }) => Number(not_answered || 0)),
-      },
-    ],
-    [data],
-  );
+  const processedData = useMemo(() => {
+    if (!data.length) return { categories: [], series: [] };
 
-  // 2. Clean Options Configuration
+    const uniqueDates = [...new Set(data.map((item) => item.date_vn))].sort();
+    const getVal = (date, version) => {
+      const entry = data.find((d) => d.date_vn === date && d.version === version);
+      return entry ? Number(entry.total_faq || 0) : 0;
+    };
+
+    return {
+      categories: uniqueDates.map((date) => {
+        const parts = date.split("-");
+        return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : date;
+      }),
+      series: [
+        { name: "Version v2", data: uniqueDates.map((date) => getVal(date, "v2")) },
+        { name: "Version v5", data: uniqueDates.map((date) => getVal(date, "v5")) },
+        { name: "Version v6", data: uniqueDates.map((date) => getVal(date, "v6")) },
+      ],
+    };
+  }, [data]);
+
   const options = useMemo(
     () => ({
       chart: {
         id: "faq-daily-trend-chart",
-        stacked: false, // Bỏ stacked để hiển thị dạng cọt cơ bản
         toolbar: { show: false },
-        fontFamily: "Inter, sans-serif",
-        sparkline: { enabled: false },
+        fontFamily: "'Be Vietnam Pro', sans-serif",
       },
-      // Thêm tiêu đề đồng bộ với các biểu đồ khác
       title: {
-        text: "Mức độ bao phủ câu hỏi theo thời gian",
+        text: "Thống kê câu hỏi theo phiên bản",
         align: "left",
-        style: {
-          fontSize: "12px",
-          color: "#334155",
-          fontWeight: 800,
-          fontFamily: "'Be Vietnam Pro', sans-serif",
-        },
+        style: { fontSize: "12px", color: "#334155", fontWeight: 800 },
       },
-      colors: ["#14b8a6", "#eab308"],
+      colors: ["#3b82f6", "#f59e0b", "#10b981"],
       plotOptions: {
         bar: {
-          columnWidth: "60%",
+          columnWidth: "50%", // Tăng độ rộng cột để trông không bị gầy
           borderRadius: 4,
+          dataLabels: {
+            position: 'top',
+          },
         },
       },
-      // Loại bỏ đường viền giữa các phần trong cùng 1 cột để nhìn "liền" hơn
-      stroke: {
-        show: true,
-        width: 1,
-        colors: ["transparent"],
+      stroke: { show: true, width: 2, colors: ["transparent"] },
+      dataLabels: {
+        enabled: true, // Bật để thấy số lượng kể cả khi cột thấp
+        offsetY: -20,
+        style: {
+          fontSize: "10px",
+          fontWeight: "bold",
+          colors: ["#64748b"]
+        },
+        formatter: (val) => val > 0 ? val : "" // Chỉ hiện số nếu > 0
       },
-      dataLabels: { enabled: false },
       xaxis: {
-        categories: data.map(({ date_vn }) => {
-          if (!date_vn) return "N/A";
-          const parts = date_vn.split("-");
-          // Trả về định dạng DD/MM
-          return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : date_vn;
-        }),
-        labels: {
-          style: { colors: "#94a3b8", fontSize: "10px", fontWeight: 600 },
-        },
-        axisBorder: { show: false },
-        axisTicks: { show: false },
+        categories: processedData.categories,
+        labels: { style: { colors: "#94a3b8", fontSize: "10px", fontWeight: 600 } },
       },
       yaxis: {
         labels: {
@@ -500,53 +495,42 @@ export const PeakHourChart = memo(({ data = [] }) => {
           formatter: (val) => Math.floor(val),
         },
       },
-      grid: {
-        borderColor: "#f1f5f9",
-        strokeDashArray: 4,
-        padding: { top: 10, bottom: 0 },
-      },
-      legend: { show: false }, // Đã tạo custom legend riêng ở HTML
+      grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
+      legend: { show: false },
       tooltip: {
-        shared: true, // Gộp dữ liệu khi hover
+        enabled: true,
+        shared: true,
         intersect: false,
         theme: "light",
-        y: { formatter: (val) => `${val} câu hỏi` },
       },
     }),
-    [data],
+    [processedData]
   );
 
   if (!data?.length) {
     return <EmptyState message="Không có dữ liệu xu hướng câu hỏi hàng ngày" />;
   }
 
-  const minChartWidth = data.length > 7 ? data.length * 45 + 80 : "100%";
-
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex justify-end gap-4 mb-2 shrink-0">
+      <div className="flex justify-end gap-4 mb-4 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#14b8a6]"></span>
-          <span className="text-xs font-semibold text-slate-600">KB có dữ liệu</span>
+          <span className="w-3 h-3 rounded-full bg-[#3b82f6]"></span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V2 (Product)</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#eab308]"></span>
-          <span className="text-xs font-semibold text-slate-600">KB thiếu</span>
+          <span className="w-3 h-3 rounded-full bg-[#f59e0b]"></span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V5 (Toán)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-[#10b981]"></span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V6 (Tiếng Việt)</span>
         </div>
       </div>
-      <div
-        ref={chartRef}
-        onMouseMove={handleMouseMove}
-        className="w-full flex-1 overflow-x-auto min-h-[300px]"
-      >
-        <div style={{ minWidth: "100%", width: minChartWidth, height: "100%" }} className="pr-16 pb-4 pt-2">
-          <ReactApexChart
-            options={options}
-            series={series}
-            type="bar"
-            height="100%"
-            width="100%"
-          />
+
+      <div className="w-full flex-1">
+        <div className="w-full h-full pb-4">
+          <ReactApexChart options={options} series={processedData.series} type="bar" height="100%" />
         </div>
       </div>
     </div>

@@ -306,13 +306,13 @@ const UserStatistics = ({ userData = [] }) => {
                 <tr className="text-[10px] text-slate-400 uppercase bg-slate-50/80">
                   <th className="p-4 font-bold">Họ tên</th>
                   <th className="p-4 font-bold text-center">Email</th>
-                  <th className="p-4 font-bold text-center">Mã bí mật</th>
+                  {/* <th className="p-4 font-bold text-center">Mã bí mật</th> */}
                   <th className="p-4 font-bold text-center">Phòng ban</th>
                   <th className="p-4 font-bold text-center">Role</th>
                   {/* <th className="p-4 font-bold text-center">Phiên chat</th>
                   <th className="p-4 font-bold text-center">Tổng câu hỏi</th>
                   <th className="p-4 font-bold text-center">Lượt gọi FAQ</th> */}
-                  <th className="p-4 font-bold text-center">TB hỏi/phiên</th>
+                  <th className="p-4 font-bold text-center">Trung bình câu hỏi/phiên</th>
                   <th className="p-4 font-bold text-center">Số ngày sử dụng</th>
                   <th className="p-4 font-bold text-center">Lần đầu</th>
                   <th className="p-4 font-bold text-center">Lần cuối</th>
@@ -328,9 +328,9 @@ const UserStatistics = ({ userData = [] }) => {
                       {user.full_name}
                     </td>
                     <td className="p-4 text-center">{user.email || "N/A"}</td>
-                    <td className="p-4 text-center font-mono text-indigo-500 font-bold">
+                    {/* <td className="p-4 text-center font-mono text-indigo-500 font-bold">
                       {user.secret_code || "********"}
-                    </td>
+                    </td> */}
                     <td className="p-4">{user.department}</td>
                     <td className="p-4">
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 uppercase">

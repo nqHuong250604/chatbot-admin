@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import EmptyState from "./EmptyState";
 
-// Tách MiniStat ra ngoài và sử dụng memo để tối ưu hiệu năng render
 const MiniStat = memo(({ label, value, barColor, icon, description }) => (
   <div className="group relative p-4 rounded-xl border border-slate-100 bg-slate-50/50 transition-all duration-300 hover:bg-white hover:shadow-lg hover:-translate-y-1 hover:z-50">
     <div
@@ -42,8 +41,7 @@ const MiniStat = memo(({ label, value, barColor, icon, description }) => (
 ));
 
 const KBAnalysis = ({ data }) => {
-  // 1. Clean Data Mapping bằng Destructuring
-  const { total, answered, refused, error, answer_rate } = data?.summary || {};
+  const { total, answered, refused, error, answer_rate, by_version } = data?.summary || {};
 
   const summary = useMemo(
     () => ({
@@ -52,25 +50,31 @@ const KBAnalysis = ({ data }) => {
       missing_data: refused || 0,
       err: error || 0,
       rate: answer_rate || 0,
+      by_version: by_version || {},
     }),
-    [total, answered, refused, error, answer_rate],
+    [total, answered, refused, error, answer_rate, by_version],
   );
 
-  // 2. Logic Series ngắn gọn
-  const series = useMemo(
-    () => [
-      Number(summary.has_data),
-      Math.max(0, Number(summary.total) - Number(summary.has_data)),
-    ],
-    [summary],
-  );
+  const { chartSeries, chartLabels } = useMemo(() => {
+    const targetOrder = ['v2', 'v5', 'v6'];
+    const series = [];
+    const labels = [];
 
-  // 3. Đưa chartOptions vào useMemo để tránh việc ApexCharts khởi tạo lại liên tục
+    targetOrder.forEach(key => {
+      if (Object.prototype.hasOwnProperty.call(summary.by_version, key)) {
+        series.push(Number(summary.by_version[key]));
+        labels.push(`Version ${key}`);
+      }
+    });
+
+    return { chartSeries: series, chartLabels: labels };
+  }, [summary.by_version]);
+
   const chartOptions = useMemo(
     () => ({
-      chart: { id: "kb-donut-analysis", fontFamily: "'Be Vietnam Pro', sans-serif" },
-      labels: ["KB có dữ liệu", "KB thiếu / lỗi"],
-      colors: ["#10b981", "#f43f5e"],
+      chart: { id: "kb-version-analysis", fontFamily: "'Be Vietnam Pro', sans-serif" },
+      labels: chartLabels,
+      colors: ["#3b82f6", "#f59e0b", "#10b981", "#8b5cf6"],
       stroke: { show: false },
       dataLabels: { enabled: false },
       plotOptions: {
@@ -81,7 +85,7 @@ const KBAnalysis = ({ data }) => {
               show: true,
               total: {
                 show: true,
-                label: "KB Đầy đủ",
+                label: "Tỷ lệ phản hồi",
                 fontSize: "10px",
                 fontWeight: "bold",
                 color: "#94a3b8",
@@ -93,15 +97,22 @@ const KBAnalysis = ({ data }) => {
                 fontWeight: "900",
                 color: "#1e293b",
                 offsetY: 5,
+                formatter: (val) => val,
               },
             },
           },
         },
       },
-      legend: { show: false },
+      legend: {
+        show: true,
+        position: 'bottom',
+        fontSize: '12px',
+        fontWeight: 600,
+        markers: { radius: 4 }
+      },
       tooltip: { enabled: true, theme: "light" },
     }),
-    [summary.rate],
+    [chartLabels, summary.rate],
   );
 
   return (
@@ -109,7 +120,7 @@ const KBAnalysis = ({ data }) => {
       <header className="flex items-center gap-3">
         <span className="text-xl">🔬</span>
         <h2 className="text-lg font-bold tracking-tight text-slate-800">
-          Tổng quan FAQ & Kho tri thức
+          Phân tích tri thức theo phiên bản
         </h2>
       </header>
 
@@ -121,7 +132,6 @@ const KBAnalysis = ({ data }) => {
           icon={<ListOrdered size={14} className="text-slate-500" />}
           description="Tổng số lần Bot thực hiện tìm kiếm câu trả lời trong kho tri thức FAQ."
         />
-
         <MiniStat
           label="KB có dữ liệu"
           value={summary.has_data}
@@ -129,7 +139,6 @@ const KBAnalysis = ({ data }) => {
           icon={<FileCheck size={14} className="text-emerald-600" />}
           description="Số câu hỏi đã tìm thấy nội dung phản hồi sẵn có trong kho dữ liệu."
         />
-
         <MiniStat
           label="KB thiếu dữ liệu"
           value={summary.missing_data}
@@ -146,9 +155,9 @@ const KBAnalysis = ({ data }) => {
         />
       </section>
 
-      <footer className="relative flex-1 flex flex-col items-center justify-center min-h-[250px]">
+      <footer className="relative flex-1 flex flex-col items-center justify-center min-h-[300px]">
         <h3 className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest absolute top-0 left-0">
-          Tỷ lệ câu hỏi được trả lời thành công (%)
+          Phân bổ yêu cầu theo phiên bản dữ liệu
         </h3>
         <div className="w-full pt-6">
           {data ? (
@@ -157,9 +166,9 @@ const KBAnalysis = ({ data }) => {
             ) : (
               <ReactApexChart
                 options={chartOptions}
-                series={series}
+                series={chartSeries}
                 type="donut"
-                height={280}
+                height={320}
               />
             )
           ) : (
