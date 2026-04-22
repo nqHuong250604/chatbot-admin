@@ -16,33 +16,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Kiểm tra session khi khởi tạo hoặc khi token thay đổi
-  const validateSession = async () => {
+  const validateSession = () => {
     const token = localStorage.getItem("admin_token");
     if (!token) {
       setUser(null);
       localStorage.removeItem("admin_user");
-      setLoading(false);
-      return;
     }
-
-    try {
-      const response = await authService.checkSession();
-      if (response && response.ok) {
-        // Cập nhật thông tin user mới nhất từ server
-        setUser(response.user);
-        localStorage.setItem("admin_user", JSON.stringify(response.user));
-      } else {
-        throw new Error("Invalid session");
-      }
-    } catch (error) {
-      console.error("Session validation failed:", error);
-      // Chỉ xóa user nếu backend trả về lỗi xác thực rõ rệt
-      localStorage.removeItem("admin_token");
-      localStorage.removeItem("admin_user");
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+    // Tin tưởng token hiện có trong localStorage để tránh bị văng khi load trang.
+    // Nếu token hết hạn thật, API Dashboard trả 401 -> Axios Interceptor sẽ tự động văng ra login.
+    setLoading(false);
   };
 
   useEffect(() => {
