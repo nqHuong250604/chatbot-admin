@@ -47,12 +47,12 @@ const Header = ({ toggleSidebar }) => {
 
       <div className="flex items-center gap-6">
         {/* Thông báo */}
-        <div className="relative cursor-pointer text-slate-400 hover:text-blue-600 transition-colors">
+        {/* <div className="relative cursor-pointer text-slate-400 hover:text-blue-600 transition-colors">
           <Bell size={22} />
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white">
             2
           </span>
-        </div>
+        </div> */}
 
         {/* Cụm User Dropdown */}
         <div className="relative" ref={dropdownRef}>
@@ -104,7 +104,7 @@ const Header = ({ toggleSidebar }) => {
 
               <button
                 onClick={logout}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-colors"
+                className="cursor-pointer w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-50 transition-colors"
               >
                 <LogOut size={16} /> Đăng xuất
               </button>

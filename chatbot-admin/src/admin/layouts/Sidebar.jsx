@@ -29,7 +29,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const shouldHideText = isCollapsed && isDesktop;
 
   const baseStyle =
-    "flex items-center w-full gap-4 px-4 py-3.5 transition-all duration-300 font-bold text-sm rounded-2xl mb-1 whitespace-nowrap overflow-hidden";
+    "flex items-center w-full gap-4 px-4 py-3.5 transition-all duration-300 font-bold text-sm rounded-2xl mb-1 whitespace-nowrap overflow-hidden cursor-pointer";
 
   const activeStyle = ({ isActive }) =>
     isActive
@@ -45,9 +45,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     <>
       {/* 1. LỚP NỀN MỜ CHO MOBILE */}
       <div
-        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[90] lg:hidden transition-all duration-300 ease-in-out ${
-          isOpen ? "opacity-100 visible" : "opacity-0 invisible"
-        }`}
+        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[90] lg:hidden transition-all duration-300 ease-in-out ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+          }`}
         onClick={toggleSidebar}
       />
 
@@ -103,7 +102,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             >
               <LayoutDashboard size={22} className="shrink-0" />
               <span
-                className={`transition-all duration-300 ${shouldHideText ? "opacity-0 invisible w-0" : "opacity-100 visible"}`}
+                className={`transition-all duration-300 ${shouldHideText ? "opacity-0 invisible w-0" : "opacity-100 visible"
+                  }`}
               >
                 Dashboard
               </span>
@@ -161,7 +161,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           <hr className="my-4 border-slate-100 mx-2" />
 
           <div className="space-y-1 pb-6">
-            <NavLink
+            {/* <NavLink
               to="/admin/settings"
               className={activeStyle}
               onClick={() => !isDesktop && toggleSidebar()}
@@ -172,15 +172,16 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               >
                 Cài đặt
               </span>
-            </NavLink>
+            </NavLink> */}
 
             <button
               onClick={logout}
-              className={`${baseStyle} text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer w-full`}
+              className={`${baseStyle} text-slate-400 hover:text-rose-600 hover:bg-rose-50 w-full`}
             >
               <LogOut size={22} className="shrink-0" />
               <span
-                className={`transition-all duration-300 ${shouldHideText ? "opacity-0 invisible w-0" : "opacity-100 visible"}`}
+                className={`transition-all duration-300 ${shouldHideText ? "opacity-0 invisible w-0" : "opacity-100 visible"
+                  }`}
               >
                 Đăng xuất
               </span>
