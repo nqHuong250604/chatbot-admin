@@ -163,7 +163,7 @@ const Login = () => {
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                     placeholder="••••••"
-                    className="w-full tracking-[1em] text-center text-3xl font-black py-5 bg-slate-50/50 border border-slate-200/60 rounded-[1.5rem] text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white transition-all shadow-inner"
+                    className="w-full tracking-[0.5em] pl-[0.5em] text-center text-2xl font-black py-4 bg-slate-50/50 border border-slate-200/60 rounded-[1.5rem] text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white transition-all shadow-inner"
                   />
                 </div>
               </div>
