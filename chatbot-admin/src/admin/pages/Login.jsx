@@ -27,8 +27,8 @@ const Login = () => {
 
   const handleRequestOtp = async (e) => {
     if (e) e.preventDefault();
-    if (!email.endsWith("@hus.edu.vn")) {
-      toast.error("Vui lòng sử dụng email nội bộ @hus.edu.vn");
+    if (!email.trim()) {
+      toast.error("Vui lòng nhập email");
       return;
     }
 
@@ -108,7 +108,7 @@ const Login = () => {
             <form onSubmit={handleRequestOtp} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="space-y-3">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Email nội bộ
+                  Email đăng nhập
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
@@ -119,7 +119,7 @@ const Login = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@hus.edu.vn"
+                    placeholder="admin@example.com"
                     className="w-full pl-12 pr-5 py-4.5 bg-slate-50/50 border border-slate-200/60 rounded-[1.5rem] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white transition-all font-medium"
                   />
                 </div>
