@@ -17,6 +17,7 @@ const KBList = () => {
   const [filterVersion, setFilterVersion] = useState("v2");
   const [deleteId, setDeleteId] = useState("");
 
+  // State mới để theo dõi dòng nào đang được mở rộng nội dung
   const [expandedId, setExpandedId] = useState(null);
 
   const fetchData = useCallback(async () => {
@@ -62,6 +63,7 @@ const KBList = () => {
     }
   };
 
+  // Hàm xử lý khi click vào nội dung
   const toggleExpand = (id) => {
     setExpandedId((prevId) => (prevId === id ? null : id));
   };
@@ -112,8 +114,8 @@ const KBList = () => {
           </div>
         </div>
 
-        {/* TABLE AREA - Đã thêm các class ẩn scrollbar */}
-        <div className="relative overflow-y-auto max-h-[calc(100vh-200px)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {/* TABLE AREA VỚI SCROLL (Dùng calc height để khớp màn hình) */}
+        <div className="relative overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-slate-50 shadow-sm">
               <tr>
@@ -147,10 +149,11 @@ const KBList = () => {
                       </span>
                     </td>
 
+                    {/* KHU VỰC NỘI DUNG MỚI */}
                     <td
                       className="px-6 py-4 text-slate-600 text-sm max-w-[500px] cursor-pointer align-top"
                       onClick={() => toggleExpand(item.id)}
-                      title={item.content}
+                      title={item.content} // Trình duyệt hiển thị full text khi hover
                     >
                       <div
                         className={`group-hover:text-slate-900 transition-all font-medium ${expandedId === item.id ? "whitespace-pre-wrap" : "line-clamp-2"
@@ -158,6 +161,7 @@ const KBList = () => {
                       >
                         {item.content}
                       </div>
+                      {/* Gợi ý cho người dùng biết có thể click nếu text bị ẩn (optional) */}
                       {expandedId !== item.id && item.content?.length > 100 && (
                         <span className="text-[10px] text-blue-500/70 mt-1 inline-block">
                           (Click để xem chi tiết)
@@ -168,7 +172,7 @@ const KBList = () => {
                     <td className="px-6 py-4 text-right align-top">
                       <button
                         onClick={(e) => {
-                          e.stopPropagation();
+                          e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
                           handleDelete(item.id, item.version);
                         }}
                         className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
