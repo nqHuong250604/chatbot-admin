@@ -14,7 +14,7 @@ import { toast } from "react-hot-toast";
 const KBList = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filterVersion, setFilterVersion] = useState("v5");
+  const [filterVersion, setFilterVersion] = useState("v2");
   const [deleteId, setDeleteId] = useState("");
 
   const fetchData = useCallback(async () => {

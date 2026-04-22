@@ -61,7 +61,7 @@ CORS_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:3000,http://localhost:5173,http://localhost:8000,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:8000",
+        "https://chatbot-api-backend.vercel.app,http://localhost:3000,http://localhost:5173,http://localhost:8000,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:8000",
     ).split(",")
     if origin.strip()
 ]
@@ -77,7 +77,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -495,6 +495,8 @@ def api_summary(
         "total"      : len(faq) if not faq.empty else 0,
         "answered"   : int(faq["answered"].sum()) if not faq.empty else 0,
         "answer_rate": round(faq["answered"].mean() * 100, 1) if not faq.empty else 0,
+        "by_version" : faq["version"].fillna("unknown").astype(str).value_counts().to_dict()
+                       if not faq.empty and "version" in faq.columns else {},
     }
 
     return {
@@ -606,13 +608,16 @@ def api_faq(
 
     if faq.empty:
         return {
-            "summary": {"total": 0, "answered": 0, "refused": 0, "error": 0, "answer_rate": 0},
+            "summary": {"total": 0, "answered": 0, "refused": 0, "error": 0, "answer_rate": 0, "by_version": {}},
             "daily"  : [],
             "missing": [],
         }
 
-    missing = faq[~faq["answered"]][["date_vn", "question", "tool_name", "result"]].copy()
+    missing_columns = ["date_vn", "question", "tool_name", "version", "result"]
+    missing_columns = [col for col in missing_columns if col in faq.columns]
+    missing = faq[~faq["answered"]][missing_columns].copy()
     missing["date_vn"] = missing["date_vn"].astype(str)
+    by_version = faq["version"].fillna("unknown").astype(str).value_counts().to_dict() if "version" in faq.columns else {}
 
     return {
         "summary": {
@@ -621,6 +626,7 @@ def api_faq(
             "refused"    : int((faq["result"] == "refused").sum()),
             "error"      : int((faq["result"] == "error").sum()),
             "answer_rate": round(faq["answered"].mean() * 100, 1),
+            "by_version" : by_version,
         },
         "daily"  : safe_records(daily_faq),
         "missing": safe_records(missing),

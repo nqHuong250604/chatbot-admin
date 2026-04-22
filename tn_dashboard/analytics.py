@@ -4,24 +4,52 @@ Tất cả logic parse & aggregate ở đây, tách biệt với UI
 """
 from __future__ import annotations
 import json
+import os
 import re
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
 import pandas as pd
+from dotenv import load_dotenv
 from supabase import create_client, Client
+
+load_dotenv()
 
 VN_TZ = timezone(timedelta(hours=7))
 
 # ── Keyword patterns để classify AI response ────────────────────
 _REFUSED_PATTERNS = [
-    'không tìm', 'không có thông tin', 'không thể trả lời',
-    'xin lỗi, tôi chỉ', 'ngoài phạm vi', 'chưa được cập nhật',
-    'sự cố kỹ thuật', 'chưa có trong hệ thống',
+    'không tìm thấy',
+    'không có thông tin',
+    'chưa có thông tin',
+    'không thể trả lời',
+    'ngoài phạm vi',
+    'chưa được cập nhật',
+    'sự cố kỹ thuật',
+    'chưa có trong hệ thống',
 ]
-_EMAIL_PATTERNS = ['vui lòng', 'nhập', 'cung cấp']
-
-
+_REFUSED_START_PATTERNS = [
+    'xin lỗi',
+    'rất tiếc',
+    'toi khong',
+    'tôi không',
+    'minh khong',
+    'mình không',
+    'hien tai he thong',
+    'hiện tại hệ thống',
+    'hien tai du lieu',
+    'hiện tại dữ liệu',
+]
+_ANSWERED_START_PATTERNS = [
+    'dựa trên',
+    'dua tren',
+    'dưới đây',
+    'duoi day',
+    'theo thông tin',
+    'theo thong tin',
+    'sau đây',
+    'sau day',
+]
 def _parse_msg(msg) -> dict:
     """Parse message — hỗ trợ cả string JSON lẫn dict (Supabase jsonb tự parse)."""
     if isinstance(msg, dict):
@@ -32,21 +60,49 @@ def _parse_msg(msg) -> dict:
     return {}
 
 def _get_type(msg) -> str:
-    return _parse_msg(msg).get('type', '')
+    data = _parse_msg(msg)
+    if data.get('user_query') is not None or data.get('ai_response') is not None:
+        return 'qa'
+    return data.get('type', '')
 
 def _get_content(msg) -> str:
-    return _parse_msg(msg).get('content', '')
+    data = _parse_msg(msg)
+    return data.get('content') or data.get('user_query') or ''
+
+def _get_question(msg) -> str:
+    data = _parse_msg(msg)
+    return data.get('user_query') or (data.get('content') if data.get('type') == 'human' else '') or ''
+
+def _get_answer(msg) -> str:
+    data = _parse_msg(msg)
+    return data.get('ai_response') or (data.get('content') if data.get('type') == 'ai' else '') or ''
+
+def _get_name(msg) -> str:
+    return _parse_msg(msg).get('name', '')
+
+def _extract_vector_store_version(tool_name: str) -> str:
+    name = str(tool_name or '').strip().lower()
+    match = re.search(r'supabase_vector_store_?(v[256])', name)
+    return match.group(1) if match else ''
 
 def _classify_ai(content: str) -> str:
-    c = content.lower()
-    if 'email' in c and any(p in c for p in _EMAIL_PATTERNS):
-        return 'ask_email'
-    if any(p in c for p in _REFUSED_PATTERNS):
-        return 'refused'
-    if content.startswith('Calling '):
-        return 'tool_call'
-    if len(content.strip()) < 10:
+    text = str(content or '').strip()
+    c = text.lower()
+    if len(text) < 10:
         return 'short'
+
+    if text.startswith('Calling '):
+        return 'tool_call'
+
+    if any(c.startswith(pattern) for pattern in _ANSWERED_START_PATTERNS):
+        return 'answered'
+
+    head = c[:300]
+    if any(head.startswith(pattern) for pattern in _REFUSED_START_PATTERNS):
+        return 'refused'
+    if len(text) < 240 and any(pattern in head for pattern in _REFUSED_PATTERNS):
+        return 'refused'
+
     return 'answered'
 
 def _is_meaningful_question(text: str) -> bool:
@@ -68,7 +124,7 @@ def _is_meaningful_question(text: str) -> bool:
 # Supabase gợi ý tên bảng thật: n8n_chat_histories
 # Nếu tên cột khác, chỉ cần sửa COL_MAP bên dưới
 
-TABLE_NAME = "chat_history_rows"   # <-- tên bảng thật trên Supabase
+TABLE_NAME = "chat_history_dashboard"   # <-- tên bảng thật trên Supabase
 
 # key   = tên cột trên Supabase
 # value = tên chuẩn dùng trong code (KHÔNG đổi value)
@@ -76,6 +132,7 @@ COL_MAP = {
     "id"         : "id",
     "session_id" : "session_id",
     "message"    : "message",
+    "version"    : "version",
     "created_at" : "created_at",
 }
 
@@ -86,7 +143,7 @@ USER_ID_COLUMN_EXISTS = True
 
 def fetch_raw(client: Client) -> pd.DataFrame:
     """Lấy toàn bộ chat_history từ Supabase, trả về DataFrame gốc."""
-    base_cols = ["id", "session_id", "message", "created_at"]
+    base_cols = ["id", "session_id", "message", "version", "created_at"]
     if USER_ID_COLUMN_EXISTS:
         base_cols.append("user_id")
     select_cols = ", ".join(base_cols)
@@ -129,6 +186,13 @@ def fetch_raw(client: Client) -> pd.DataFrame:
 
     df['msg_type']   = df['message'].apply(_get_type)
     df['content']    = df['message'].apply(_get_content)
+    df['question']   = df['message'].apply(_get_question)
+    df['answer']     = df['message'].apply(_get_answer)
+    df['tool_name']  = df['message'].apply(_get_name)
+    df['tool_version'] = df['tool_name'].apply(_extract_vector_store_version)
+    if 'version' not in df.columns:
+        df['version'] = ''
+    df['version'] = df['version'].fillna('').astype(str).str.strip().str.lower()
     df['created_at'] = pd.to_datetime(df['created_at'], utc=True)
     df['created_vn'] = df['created_at'].dt.tz_convert(VN_TZ)
     df['date_vn']    = df['created_vn'].dt.date
@@ -147,13 +211,20 @@ def build_sessions(df: pd.DataFrame) -> pd.DataFrame:
     sessions = []
     for sid, grp in df.groupby('session_id'):
         grp    = grp.sort_values('created_at')
-        ai_grp = grp[grp['msg_type'] == 'ai'].copy()
-        ai_grp['rtype'] = ai_grp['content'].apply(_classify_ai)
-
-        n_human    = len(grp[grp['msg_type'] == 'human'])
-        n_tool     = len(grp[grp['msg_type'] == 'tool'])
-        n_answered = len(ai_grp[ai_grp['rtype'] == 'answered'])
-        n_refused  = len(ai_grp[ai_grp['rtype'] == 'refused'])
+        question_mask = grp['question'].fillna('').astype(str).apply(_is_meaningful_question)
+        if question_mask.any():
+            answer_types = grp.loc[question_mask, 'answer'].fillna('').astype(str).apply(_classify_ai)
+            n_human = int(question_mask.sum())
+            n_tool = 0
+            n_answered = int((answer_types == 'answered').sum())
+            n_refused = int((answer_types == 'refused').sum())
+        else:
+            ai_grp = grp[grp['msg_type'] == 'ai'].copy()
+            ai_grp['rtype'] = ai_grp['content'].apply(_classify_ai)
+            n_human    = len(grp[grp['msg_type'] == 'human'])
+            n_tool     = len(grp[grp['msg_type'] == 'tool'])
+            n_answered = len(ai_grp[ai_grp['rtype'] == 'answered'])
+            n_refused  = len(ai_grp[ai_grp['rtype'] == 'refused'])
 
         first_msg    = grp['created_at'].min()
         last_msg     = grp['created_at'].max()
@@ -169,6 +240,7 @@ def build_sessions(df: pd.DataFrame) -> pd.DataFrame:
             'n_refused'   : n_refused,
             'bot_answered': n_answered > 0,
             'duration_min': duration_min,
+            'version'     : grp['version'].dropna().astype(str).mode().iloc[0] if not grp['version'].dropna().empty else '',
         })
 
     return pd.DataFrame(sessions).sort_values('date_vn').reset_index(drop=True)
@@ -179,11 +251,31 @@ def build_qa_pairs(df: pd.DataFrame) -> pd.DataFrame:
     Tách thành từng cặp hỏi-đáp (Q&A pair).
     1 dòng = 1 lần user hỏi có nghĩa + kết quả cuối cùng của bot.
 
-    Flow thật: User hỏi → Bot hỏi email → User nhập email → Bot gọi tool → Bot trả lời
-    Nên không lấy AI response ngay tiếp theo mà phải lấy AI response cuối cùng
+    Fallback cho format lich su cu: user hoi -> bot/tool xu ly -> bot tra loi.
+    Khong con dung chat email de xac thuc dang nhap.
     trước khi user hỏi câu tiếp theo (hoặc cuối session).
     """
     pairs = []
+    if 'question' in df.columns and 'answer' in df.columns and df['question'].fillna('').astype(str).str.len().sum() > 0:
+        for _, row in df.sort_values('created_at').iterrows():
+            question = str(row.get('question') or '').strip()
+            if not _is_meaningful_question(question):
+                continue
+            answer = str(row.get('answer') or '').strip()
+            result = _classify_ai(answer)
+            pairs.append({
+                'session_id': row.get('session_id'),
+                'date_vn'   : row.get('date_vn'),
+                'hour_vn'   : row.get('hour_vn'),
+                'question'  : question,
+                'answer'    : answer[:200],
+                'version'   : row.get('version') or 'unknown',
+                'result'    : result,
+                'answered'  : result == 'answered',
+                'asked_at'  : row.get('created_at'),
+            })
+        return pd.DataFrame(pairs).sort_values('date_vn').reset_index(drop=True) if pairs else pd.DataFrame()
+
     for sid, grp in df.groupby('session_id'):
         grp = grp.sort_values('created_at').reset_index(drop=True)
 
@@ -210,8 +302,8 @@ def build_qa_pairs(df: pd.DataFrame) -> pd.DataFrame:
                 continue
 
             # Classify tất cả AI responses trong vùng → lấy kết quả quan trọng nhất
-            # Ưu tiên: answered > refused > ask_email > tool_call > short
-            priority = {'answered': 0, 'refused': 1, 'ask_email': 2, 'tool_call': 3, 'short': 4}
+            # Uu tien: answered > refused > tool_call > short
+            priority = {'answered': 0, 'refused': 1, 'tool_call': 2, 'short': 3}
             best_ai  = None
             best_pri = 99
 
@@ -226,9 +318,7 @@ def build_qa_pairs(df: pd.DataFrame) -> pd.DataFrame:
                 # Chỉ có tool_call/short, không có kết quả thật → bỏ qua
                 continue
 
-            # ask_email = bot chưa phục vụ được (chờ xác thực) → tính là not answered
             final_answered = best_rtype == 'answered'
-            final_result   = best_rtype if best_rtype != 'ask_email' else 'not_served'
 
             pairs.append({
                 'session_id': sid,
@@ -236,7 +326,7 @@ def build_qa_pairs(df: pd.DataFrame) -> pd.DataFrame:
                 'hour_vn'   : row['hour_vn'],
                 'question'  : row['content'].strip(),
                 'answer'    : best_ai['content'].strip()[:200],
-                'result'    : final_result,
+                'result'    : best_rtype,
                 'answered'  : final_answered,
                 'asked_at'  : row['created_at'],
             })
@@ -277,7 +367,11 @@ def _parse_tool_result(content: str) -> str:
             if 'output' in item:
                 return 'answered' if len(item['output'].strip()) > 20 else 'empty'
             if 'response' in item:
-                return 'error'
+                response = item.get('response')
+                response_text = json.dumps(response, ensure_ascii=False) if not isinstance(response, str) else response
+                if any(token in response_text.lower() for token in ('error', 'service unavailable', 'timeout')):
+                    return 'error'
+                return 'answered' if len(response_text.strip()) > 20 else 'empty'
     except:
         pass
     return 'empty'
@@ -320,6 +414,31 @@ def build_faq_pairs(df: pd.DataFrame) -> pd.DataFrame:
     refused  = AI nói không có dữ liệu dù đã gọi FAQ → cần bổ sung KB
     """
     df = df.copy()
+    if 'question' in df.columns and df['question'].fillna('').astype(str).str.len().sum() > 0:
+        rows = []
+        for _, row in df.sort_values('created_at').iterrows():
+            question = str(row.get('question') or '').strip()
+            if not _is_meaningful_question(question):
+                continue
+            answer = str(row.get('answer') or '').strip()
+            result = _classify_ai(answer)
+            rows.append({
+                'session_id': row.get('session_id'),
+                'date_vn'   : row.get('date_vn'),
+                'hour_vn'   : row.get('hour_vn'),
+                'question'  : question,
+                'tool_name' : 'question_by_version',
+                'version'   : row.get('version') or 'unknown',
+                'answered'  : result == 'answered',
+                'result'    : result,
+                'asked_at'  : row.get('created_at'),
+            })
+        return pd.DataFrame(rows).sort_values('date_vn').reset_index(drop=True) if rows else pd.DataFrame()
+
+    if 'tool_name' not in df.columns:
+        df['tool_name'] = df['message'].apply(_get_name)
+    if 'tool_version' not in df.columns:
+        df['tool_version'] = df['tool_name'].apply(_extract_vector_store_version)
 
     human_indices_per_session = {}
     for sid, grp in df.groupby('session_id'):
@@ -334,7 +453,10 @@ def build_faq_pairs(df: pd.DataFrame) -> pd.DataFrame:
         grp = grp.sort_values('created_at').reset_index(drop=True)
         human_indices = human_indices_per_session[sid]
 
-        faq_ai_rows = grp[grp['content'].str.startswith('Calling faq', na=False)]
+        faq_ai_rows = grp[
+            (grp['msg_type'] == 'tool') &
+            (grp['tool_name'].fillna('').astype(str).str.lower().str.startswith('supabase_vector_store'))
+        ]
         if faq_ai_rows.empty:
             continue
 
@@ -343,6 +465,23 @@ def build_faq_pairs(df: pd.DataFrame) -> pd.DataFrame:
 
             # Câu hỏi human thật gần nhất trước faq call
             prev_real = [i for i in human_indices if i < faq_idx]
+            question = grp.loc[prev_real[-1], 'content'] if prev_real else '(khong ro)'
+            result = _parse_tool_result(str(faq_row.get('content') or ''))
+            tool_name = faq_row.get('tool_name') or ''
+            version = faq_row.get('tool_version') or _extract_vector_store_version(tool_name)
+
+            pairs.append({
+                'session_id': sid,
+                'date_vn'   : faq_row['date_vn'],
+                'hour_vn'   : faq_row['hour_vn'],
+                'question'  : question.strip(),
+                'tool_name' : tool_name,
+                'version'   : version or 'unknown',
+                'answered'  : result in ('answered', 'empty'),
+                'result'    : result,
+                'asked_at'  : faq_row['created_at'],
+            })
+            continue
             question  = grp.loc[prev_real[-1], 'content'] if prev_real else '(không rõ)'
 
             # Ranh giới tìm AI response: đến human tiếp theo hoặc faq call tiếp theo
@@ -390,7 +529,10 @@ def build_daily_from_faq(faq_df: pd.DataFrame) -> pd.DataFrame:
     """Tổng hợp theo ngày từ faq_pairs."""
     if faq_df.empty:
         return pd.DataFrame()
-    daily = faq_df.groupby('date_vn').agg(
+    group_cols = ['date_vn']
+    if 'version' in faq_df.columns:
+        group_cols.append('version')
+    daily = faq_df.groupby(group_cols).agg(
         total_faq   = ('session_id', 'count'),
         answered    = ('answered', 'sum'),
     ).reset_index()
@@ -517,7 +659,10 @@ def build_keywords(df: pd.DataFrame, top_n: int = 15) -> tuple:
         if len(t) < 5: return False
         return True
 
-    real_msgs = df[(df['msg_type'] == 'human') & df['content'].apply(is_real)]['content']
+    if 'question' in df.columns and df['question'].fillna('').astype(str).str.len().sum() > 0:
+        real_msgs = df[df['question'].fillna('').astype(str).apply(is_real)]['question']
+    else:
+        real_msgs = df[(df['msg_type'] == 'human') & df['content'].apply(is_real)]['content']
 
     all_words, bigrams = [], []
     for msg in real_msgs:
@@ -573,9 +718,12 @@ def build_user_stats(df: pd.DataFrame, client: Client = None) -> pd.DataFrame:
         uid_int  = int(uid)
         info     = user_map.get(uid_int, {})
         sessions = grp['session_id'].nunique()
-        msgs     = grp[grp['msg_type'] == 'human'].shape[0]
+        if 'question' in grp.columns and grp['question'].fillna('').astype(str).str.len().sum() > 0:
+            msgs = int(grp['question'].fillna('').astype(str).apply(_is_meaningful_question).sum())
+        else:
+            msgs = grp[grp['msg_type'] == 'human'].shape[0]
         days     = grp['date_vn'].nunique()
-        faq      = grp[grp['content'].str.startswith('Calling faq', na=False)].shape[0]
+        faq      = msgs
         first    = grp['created_at'].min()
         last     = grp['created_at'].max()
 
