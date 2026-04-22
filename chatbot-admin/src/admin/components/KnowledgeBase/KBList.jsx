@@ -17,6 +17,8 @@ const KBList = () => {
   const [filterVersion, setFilterVersion] = useState("v2");
   const [deleteId, setDeleteId] = useState("");
 
+  const [expandedId, setExpandedId] = useState(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -41,7 +43,6 @@ const KBList = () => {
     const targetId = id || deleteId;
     if (!targetId) return toast.error("Vui lòng nhập hoặc chọn ID!");
 
-    // Nếu không truyền version từ hàng (ví dụ dùng ô nhập nhanh), lấy từ bộ lọc hiện tại
     const targetVersion = version || filterVersion;
 
     if (
@@ -61,8 +62,12 @@ const KBList = () => {
     }
   };
 
+  const toggleExpand = (id) => {
+    setExpandedId((prevId) => (prevId === id ? null : id));
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 text-left">
+    <div className="space-y-8 animate-in fade-in duration-500 text-left h-full">
       <div className="bg-white rounded-3xl border border-slate-200/60 shadow-xl shadow-slate-200/20 overflow-hidden">
         {/* HEADER */}
         <div className="p-6 md:p-8 border-b border-slate-100 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -100,15 +105,15 @@ const KBList = () => {
             </div>
             <button
               onClick={fetchData}
-              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:text-blue-600 transition-all shadow-sm"
+              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:text-blue-600 transition-all shadow-sm cursor-pointer"
             >
               <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
         </div>
 
-        {/* TABLE AREA VỚI SCROLL */}
-        <div className="relative overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+        {/* TABLE AREA - Đã thêm các class ẩn scrollbar */}
+        <div className="relative overflow-y-auto max-h-[calc(100vh-200px)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-slate-50 shadow-sm">
               <tr>
@@ -133,22 +138,39 @@ const KBList = () => {
                     key={item.id}
                     className="group hover:bg-blue-50/30 transition-colors"
                   >
-                    <td className="px-6 py-4 font-mono text-[11px] text-slate-400">
+                    <td className="px-6 py-4 font-mono text-[11px] text-slate-400 align-top">
                       #{item.id}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 align-top">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase border border-blue-100">
                         {item.version || "v2"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-600 text-sm max-w-[500px]">
-                      <div className="line-clamp-2 group-hover:text-slate-900 transition-colors font-medium">
+
+                    <td
+                      className="px-6 py-4 text-slate-600 text-sm max-w-[500px] cursor-pointer align-top"
+                      onClick={() => toggleExpand(item.id)}
+                      title={item.content}
+                    >
+                      <div
+                        className={`group-hover:text-slate-900 transition-all font-medium ${expandedId === item.id ? "whitespace-pre-wrap" : "line-clamp-2"
+                          }`}
+                      >
                         {item.content}
                       </div>
+                      {expandedId !== item.id && item.content?.length > 100 && (
+                        <span className="text-[10px] text-blue-500/70 mt-1 inline-block">
+                          (Click để xem chi tiết)
+                        </span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+
+                    <td className="px-6 py-4 text-right align-top">
                       <button
-                        onClick={() => handleDelete(item.id, item.version)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item.id, item.version);
+                        }}
                         className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
                       >
                         <Trash2 size={16} />
@@ -170,52 +192,6 @@ const KBList = () => {
           </table>
         </div>
       </div>
-
-      {/* QUICK DELETE */}
-      {/* <div className="bg-white p-8 rounded-3xl border border-red-100 shadow-xl shadow-red-500/5 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-red-100 text-red-600 rounded-2xl">
-            <AlertCircle size={24} />
-          </div>
-          <div>
-            <h3 className="font-extrabold text-slate-900">Xóa nhanh bản ghi</h3>
-            <p className="text-sm text-slate-500 font-medium">
-              Nhập ID để xóa trực tiếp
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center bg-slate-50 border rounded-2xl p-1 shadow-inner">
-            <button
-              onClick={() =>
-                setDeleteId((prev) => Math.max(0, Number(prev) - 1))
-              }
-              className="p-2.5 text-slate-400 cursor-pointer"
-            >
-              <Minus size={16} />
-            </button>
-            <input
-              type="number"
-              value={deleteId}
-              onChange={(e) => setDeleteId(e.target.value)}
-              className="w-20 bg-transparent text-center font-black text-slate-800 outline-none"
-              placeholder="ID"
-            />
-            <button
-              onClick={() => setDeleteId((prev) => Number(prev) + 1)}
-              className="p-2.5 text-slate-400 cursor-pointer"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-          <button
-            onClick={() => handleDelete()}
-            className="px-8 py-3.5 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all cursor-pointer"
-          >
-            Xác nhận xóa
-          </button>
-        </div>
-      </div> */}
     </div>
   );
 };
