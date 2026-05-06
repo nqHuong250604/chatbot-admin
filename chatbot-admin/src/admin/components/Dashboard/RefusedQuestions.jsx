@@ -55,7 +55,7 @@ const RefusedQuestions = memo(({ questions = [] }) => {
           <div className="divide-y divide-slate-50 max-h-[400px] overflow-y-auto">
             {questions.map((item, idx) => {
               const qText = typeof item === "string" ? item : item.question;
-              const qDate = item.date || today;
+              const qDate = item.date_vn || today;
               return (
                 <div
                   key={idx}
