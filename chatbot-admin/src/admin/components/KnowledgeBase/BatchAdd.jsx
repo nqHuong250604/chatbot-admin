@@ -80,9 +80,9 @@ const BatchAdd = () => {
             value={version}
             onChange={(e) => setVersion(e.target.value)}
           >
-            <option value="v2">v2 (Sản phẩm)</option>
-            <option value="v5">v5 (Toán)</option>
-            <option value="v6">v6 (Tiếng Việt)</option>
+            <option value="v2">V2 - Trạng Nguyên Tiếng Việt (luyện +thi)</option>
+            <option value="v5">V5 - Trạng Nguyên Tiếng Việt (học)</option>
+            <option value="v6">V6 - Trạng Nguyên Toán</option>
           </select>
         </div>
         <div className="space-y-2">

@@ -516,15 +516,15 @@ export const PeakHourChart = memo(({ data = [] }) => {
       <div className="flex justify-end gap-4 mb-4 shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-[#3b82f6]"></span>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V2 (Product)</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V2 - Trạng Nguyên Tiếng Việt (luyện +thi)</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-[#f59e0b]"></span>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V5 (Toán)</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V5 - Trạng Nguyên Tiếng Việt (học)</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-[#10b981]"></span>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V6 (Tiếng Việt)</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V6 - Trạng Nguyên Toán</span>
         </div>
       </div>
 
