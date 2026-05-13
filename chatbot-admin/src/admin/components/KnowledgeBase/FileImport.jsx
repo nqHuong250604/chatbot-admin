@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Upload, HelpCircle, ChevronDown, FileUp } from "lucide-react";
 import { kbService } from "../../services/kbService";
 import { toast } from "react-hot-toast";
+import { useDashboardMode } from "../../context/DashboardModeContext";
 
 const FileImport = () => {
+  const { mode } = useDashboardMode();
   const [file, setFile] = useState(null);
   const [version, setVersion] = useState("v2");
   const [department, setDepartment] = useState("");
@@ -13,7 +15,7 @@ const FileImport = () => {
     if (!file) return toast.error("Vui lòng chọn file!");
     setUploading(true);
     try {
-      const res = await kbService.uploadFile(file, version, department);
+      const res = await kbService.uploadFile(file, version, department, mode);
       toast.success(res.data.message || "File đã được gửi sang n8n!");
       setFile(null);
     } catch {

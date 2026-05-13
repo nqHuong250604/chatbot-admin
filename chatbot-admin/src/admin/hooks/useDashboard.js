@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import dashboardService from "../services/dashboardService";
+import { useDashboardMode } from "../context/DashboardModeContext";
 
 export const useDashboard = (filter = "all") => {
   const [data, setData] = useState({
@@ -13,13 +14,15 @@ export const useDashboard = (filter = "all") => {
   const [loading, setLoading] = useState(true);
   const isMounted = useRef(true);
 
+  const { mode } = useDashboardMode();
+
   const filterKey =
     typeof filter === "object" ? JSON.stringify(filter) : filter;
 
   const fetchSection = useCallback(
     async (key, fetchFn, transformFn) => {
       try {
-        let res = await fetchFn(filter);
+        let res = await fetchFn(filter, mode);
 
         const isEmpty =
           !res ||
@@ -27,7 +30,7 @@ export const useDashboard = (filter = "all") => {
           (Array.isArray(res) && res.length === 0);
 
         if (isEmpty && filter !== "all" && filterKey !== "{}") {
-          res = await fetchFn("all");
+          res = await fetchFn("all", mode);
         }
 
         if (isMounted.current) {
@@ -40,7 +43,7 @@ export const useDashboard = (filter = "all") => {
         console.error(`Lỗi load ${key}:`, err);
       }
     },
-    [filter, filterKey],
+    [filter, filterKey, mode],
   );
 
   useEffect(() => {
@@ -71,7 +74,7 @@ export const useDashboard = (filter = "all") => {
     return () => {
       isMounted.current = false;
     };
-  }, [filterKey, fetchSection]);
+  }, [filterKey, fetchSection, mode]);
 
   return { data, loading };
 };

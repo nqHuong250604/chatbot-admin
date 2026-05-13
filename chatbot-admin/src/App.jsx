@@ -15,6 +15,7 @@ import FileImport from "./admin/components/KnowledgeBase/FileImport";
 import KBList from "./admin/components/KnowledgeBase/KBList";
 import Login from "./admin/pages/Login";
 import { AuthProvider, useAuth } from "./admin/components/Auth/AuthContext";
+import { DashboardModeProvider } from "./admin/context/DashboardModeContext";
 import { Toaster } from "react-hot-toast";
 
 // Thành phần bảo vệ Route
@@ -39,8 +40,9 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Toaster position="top-right" />
+      <DashboardModeProvider>
+        <Router>
+          <Toaster position="top-right" />
         <Routes>
           {/* Route công khai */}
           <Route path="/login" element={<Login />} />
@@ -70,6 +72,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
+      </DashboardModeProvider>
     </AuthProvider>
   );
 }

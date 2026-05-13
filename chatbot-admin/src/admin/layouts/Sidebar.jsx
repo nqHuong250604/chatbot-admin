@@ -12,9 +12,11 @@ import {
 } from "lucide-react";
 import logo from "../../assets/logo.svg";
 import { useAuth } from "../components/Auth/AuthContext";
+import { useDashboardMode } from "../context/DashboardModeContext";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { logout } = useAuth();
+  const { mode } = useDashboardMode();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 

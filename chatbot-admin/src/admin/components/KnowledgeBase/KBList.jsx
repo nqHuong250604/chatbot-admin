@@ -9,8 +9,10 @@ import {
 } from "lucide-react";
 import { kbService } from "../../services/kbService";
 import { toast } from "react-hot-toast";
+import { useDashboardMode } from "../../context/DashboardModeContext";
 
 const KBList = () => {
+  const { mode } = useDashboardMode();
   // --- States ---
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ const KBList = () => {
         version: filterVersion,
         limit: 1000, // Lấy tập dữ liệu đủ lớn để phân trang tại client
       };
-      const res = await kbService.getList(params);
+      const res = await kbService.getList(params, mode);
       setData(res.data || []);
       setCurrentPage(1); // Reset về trang 1 khi đổi filter hoặc tải lại
     } catch {
@@ -93,7 +95,7 @@ const KBList = () => {
       return;
 
     try {
-      const res = await kbService.delete(targetId, targetVersion);
+      const res = await kbService.delete(targetId, targetVersion, mode);
       toast.success(res.message || "Đã xóa bản ghi thành công");
       fetchData();
     } catch {

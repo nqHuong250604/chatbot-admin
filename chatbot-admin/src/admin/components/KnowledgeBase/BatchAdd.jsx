@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { kbService } from "../../services/kbService";
 import { toast } from "react-hot-toast";
 import { Send, PlusCircle, Trash2, ListPlus } from "lucide-react";
+import { useDashboardMode } from "../../context/DashboardModeContext";
 
 const BatchAdd = () => {
+  const { mode } = useDashboardMode();
   const [loading, setLoading] = useState(false);
   const [version, setVersion] = useState("v2");
   const [department, setDepartment] = useState("");
@@ -39,7 +41,7 @@ const BatchAdd = () => {
         department,
         items,
       };
-      const res = await kbService.addBatch(payload);
+      const res = await kbService.addBatch(payload, mode);
       toast.success(res.message || "Đã gửi dữ liệu hàng loạt sang n8n!");
       setItems([{ question: "", answer: "" }]);
       setDepartment("");

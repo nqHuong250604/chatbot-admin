@@ -7,11 +7,15 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  LayoutDashboard,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "../components/Auth/AuthContext";
+import { useDashboardMode } from "../context/DashboardModeContext";
 
 const Header = ({ toggleSidebar }) => {
   const { user, logout } = useAuth();
+  const { mode, setMode } = useDashboardMode();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -46,13 +50,31 @@ const Header = ({ toggleSidebar }) => {
       </div>
 
       <div className="flex items-center gap-6">
-        {/* Thông báo */}
-        {/* <div className="relative cursor-pointer text-slate-400 hover:text-blue-600 transition-colors">
-          <Bell size={22} />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white">
-            2
-          </span>
-        </div> */}
+        {/* Mode Toggle */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button
+            onClick={() => setMode("internal")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
+              mode === "internal"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <LayoutDashboard size={16} />
+            Nội bộ
+          </button>
+          <button
+            onClick={() => setMode("public")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
+              mode === "public"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <Globe size={16} />
+            Public
+          </button>
+        </div>
 
         {/* Cụm User Dropdown */}
         <div className="relative" ref={dropdownRef}>

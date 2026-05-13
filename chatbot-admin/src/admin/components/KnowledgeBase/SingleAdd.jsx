@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { kbService } from "../../services/kbService";
 import { toast } from "react-hot-toast";
 import { Send, PlusCircle } from "lucide-react";
+import { useDashboardMode } from "../../context/DashboardModeContext";
 
 const SingleAdd = () => {
+  const { mode } = useDashboardMode();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     version: "v2",
@@ -25,7 +27,7 @@ const SingleAdd = () => {
 
     setLoading(true);
     try {
-      const res = await kbService.addSingle(formData);
+      const res = await kbService.addSingle(formData, mode);
 
       // AxiosClient đã return data, nên res ở đây chính là object kết quả
       toast.success(res.message || "Đã gửi dữ liệu sang n8n xử lý!");

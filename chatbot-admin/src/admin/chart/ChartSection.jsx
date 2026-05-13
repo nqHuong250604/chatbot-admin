@@ -30,24 +30,29 @@ const commonTooltip = {
   intersect: false,
 };
 
+// Style chung cho Legend (Ghi chú) để đảm bảo tính premium và đồng nhất
+const LegendItem = ({ color, label }) => (
+  <div className="flex items-center gap-2">
+    <span className={`w-3 h-3 rounded-full ${color}`}></span>
+    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+      {label}
+    </span>
+  </div>
+);
+
 // 1. Biểu đồ Xu hướng (DailyTrendChart)
 export const DailyTrendChart = memo(({ data }) => {
   const { chartRef, handleMouseMove } = useTooltipFix();
-
-  // FIX: Dữ liệu JSON bạn gửi là một mảng trực tiếp [{}, {}, ...]
-  // Không dùng data?.data nữa mà dùng trực tiếp data
   const chartData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
   const series = useMemo(
     () => [
       {
         name: "Trả lời được",
-        // Map đúng trường 'answered' từ JSON
         data: chartData.map((d) => d.answered || 0),
       },
       {
         name: "Từ chối",
-        // Map đúng trường 'refused' từ JSON
         data: chartData.map((d) => d.refused || 0),
       },
     ],
@@ -59,18 +64,17 @@ export const DailyTrendChart = memo(({ data }) => {
       chart: {
         id: "daily-trend-main",
         type: "bar",
-        stacked: false, // Chuyển thành biểu đồ cột đứng (Basic Column)
+        stacked: false,
         toolbar: { show: false },
         fontFamily: "'Be Vietnam Pro', sans-serif",
         animations: { enabled: true, easing: "easeinout", speed: 800 },
       },
-      colors: ["#10b981", "#e11d48"], // Xanh cho thành công, Đỏ Ruby cho từ chối
+      colors: ["#10b981", "#e11d48"],
       plotOptions: {
         bar: { columnWidth: "45%", borderRadius: 4 },
       },
       dataLabels: { enabled: false },
       xaxis: {
-        // Map date_vn (2026-02-06 -> 06/02)
         categories: chartData.map((d) =>
           d.date_vn ? dayjs(d.date_vn).format("DD/MM") : "",
         ),
@@ -85,7 +89,7 @@ export const DailyTrendChart = memo(({ data }) => {
         },
       },
       grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
-      legend: { show: false }, // Đặt mốc cố định html thay vì của canvas
+      legend: { show: false },
       tooltip: {
         ...commonTooltip,
         y: { formatter: (val) => val + " câu hỏi" },
@@ -102,16 +106,9 @@ export const DailyTrendChart = memo(({ data }) => {
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Cố định phần Ghi chú (Legend) ở trên để khi cuộn ngang biểu đồ sẽ không bị trượt mất */}
       <div className="flex justify-end gap-4 mb-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#10b981]"></span>
-          <span className="text-xs font-semibold text-slate-600">Trả lời được</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#e11d48]"></span>
-          <span className="text-xs font-semibold text-slate-600">Từ chối</span>
-        </div>
+        <LegendItem color="bg-[#10b981]" label="Trả lời được" />
+        <LegendItem color="bg-[#e11d48]" label="Từ chối" />
       </div>
       <div
         ref={chartRef}
@@ -245,10 +242,7 @@ export const RateLineChart = memo(({ data }) => {
 export const PeakHourApexChart = memo(({ data }) => {
   const { chartRef, handleMouseMove } = useTooltipFix();
   const chartData = useMemo(() => {
-    // FIX: JSON của bạn trả về data là mảng hours trực tiếp [ {hour_vn: 0, count: 0}, ... ]
     const raw = Array.isArray(data) ? data : [];
-
-    // Tạo danh sách 24 giờ để đảm bảo biểu đồ luôn đủ từ 00h - 23h
     return Array.from({ length: 24 }, (_, i) => {
       const found = raw.find((item) => item.hour_vn === i);
       return {
@@ -285,7 +279,6 @@ export const PeakHourApexChart = memo(({ data }) => {
           dataLabels: { position: "top" },
         },
       },
-      // Màu sắc: Cột cao nhất là Cam (Amber), còn lại là Xanh Cyan (Cyan)
       colors: chartData.map((item) =>
         item.count === maxCount && maxCount > 0 ? "#f59e0b" : "#06b6d4",
       ),
@@ -307,7 +300,7 @@ export const PeakHourApexChart = memo(({ data }) => {
           formatter: (val) => Math.floor(val),
         },
       },
-      legend: { show: false }, // Dùng custom HTML legend
+      legend: { show: false },
       grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
       tooltip: {
         theme: "light",
@@ -316,7 +309,6 @@ export const PeakHourApexChart = memo(({ data }) => {
     };
   }, [chartData]);
 
-  // Peak hour chart có 24 giờ nên có thể chứa vừa độ rộng, chỉ cần hiển thị empty nếu không có phiên nào
   const totalCounts = chartData.reduce((acc, curr) => acc + curr.count, 0);
 
   if (totalCounts === 0) {
@@ -328,14 +320,8 @@ export const PeakHourApexChart = memo(({ data }) => {
   return (
     <div className="w-full h-full flex flex-col">
       <div className="flex justify-end gap-4 mb-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#f59e0b]"></span>
-          <span className="text-xs font-semibold text-slate-600">Giờ cao điểm (nhiều nhất)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#06b6d4]"></span>
-          <span className="text-xs font-semibold text-slate-600">Bình thường</span>
-        </div>
+        <LegendItem color="bg-[#f59e0b]" label="Giờ cao điểm (nhiều nhất)" />
+        <LegendItem color="bg-[#06b6d4]" label="Bình thường" />
       </div>
       <div
         ref={chartRef}
@@ -358,7 +344,6 @@ export const PeakHourApexChart = memo(({ data }) => {
 
 // 4. Biểu đồ Donut Tỉ lệ Phản hồi (ResponseRateDonut)
 export const ResponseRateDonut = memo(({ answered = 0, refused = 0 }) => {
-  // Đảm bảo dữ liệu truyền vào là số
   const sAnswered = Number(answered);
   const sRefused = Number(refused);
 
@@ -384,19 +369,18 @@ export const ResponseRateDonut = memo(({ answered = 0, refused = 0 }) => {
               show: true,
               total: {
                 show: true,
-                label: "THÀNH CÔNG", // Chữ nhỏ ở dưới hoặc trên
+                label: "THÀNH CÔNG",
                 fontSize: "10px",
                 fontWeight: 800,
                 color: "#94a3b8",
-                // Chuyển rate thành giá trị chính hiển thị ở giữa
                 formatter: () => `${rate}%`,
               },
               value: {
                 show: true,
-                fontSize: "24px", // Chỉnh size số % to lên
+                fontSize: "24px",
                 fontWeight: 900,
                 color: "#1e293b",
-                offsetY: 4, // Căn chỉnh vị trí số
+                offsetY: 4,
                 formatter: () => `${rate}%`,
               },
             },
@@ -406,9 +390,10 @@ export const ResponseRateDonut = memo(({ answered = 0, refused = 0 }) => {
       dataLabels: { enabled: false },
       legend: {
         position: "bottom",
-        fontSize: "12px",
+        fontSize: "10px",
         fontWeight: 600,
         markers: { radius: 12 },
+        formatter: (val) => val.toUpperCase(),
       },
       stroke: { show: false },
     };
@@ -428,29 +413,63 @@ export const ResponseRateDonut = memo(({ answered = 0, refused = 0 }) => {
   );
 });
 
-// 5. Biểu đồ FAQ (PeakHourChart) - Đã sửa theo phiên bản v2, v5, v6
-export const PeakHourChart = memo(({ data = [] }) => {
+// 5. Biểu đồ FAQ (PeakHourChart)
+export const PeakHourChart = memo(({ data = [], mode = "internal" }) => {
   const processedData = useMemo(() => {
     if (!data.length) return { categories: [], series: [] };
 
     const uniqueDates = [...new Set(data.map((item) => item.date_vn))].sort();
-    const getVal = (date, version) => {
-      const entry = data.find((d) => d.date_vn === date && d.version === version);
-      return entry ? Number(entry.total_faq || 0) : 0;
-    };
+    const hasVersions = data.some((d) => d.version);
 
-    return {
-      categories: uniqueDates.map((date) => {
-        const parts = date.split("-");
-        return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : date;
-      }),
-      series: [
-        { name: "Version v2", data: uniqueDates.map((date) => getVal(date, "v2")) },
-        { name: "Version v5", data: uniqueDates.map((date) => getVal(date, "v5")) },
-        { name: "Version v6", data: uniqueDates.map((date) => getVal(date, "v6")) },
-      ],
-    };
-  }, [data]);
+    if (hasVersions && mode === "internal") {
+      const getVal = (date, version) => {
+        const entry = data.find(
+          (d) => d.date_vn === date && d.version === version,
+        );
+        return entry ? Number(entry.total_faq || 0) : 0;
+      };
+
+      return {
+        categories: uniqueDates.map((date) => {
+          const parts = date.split("-");
+          return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : date;
+        }),
+        series: [
+          {
+            name: "V2 - Trạng Nguyên Tiếng Việt (luyện +thi)",
+            data: uniqueDates.map((date) => getVal(date, "v2")),
+          },
+          {
+            name: "V5 - Trạng Nguyên Tiếng Việt (học)",
+            data: uniqueDates.map((date) => getVal(date, "v5")),
+          },
+          {
+            name: "V6 - Trạng Nguyên Toán",
+            data: uniqueDates.map((date) => getVal(date, "v6")),
+          },
+        ],
+      };
+    } else {
+      const getDailyTotal = (date) => {
+        return data
+          .filter((d) => d.date_vn === date)
+          .reduce((acc, curr) => acc + Number(curr.total_faq || 0), 0);
+      };
+
+      return {
+        categories: uniqueDates.map((date) => {
+          const parts = date.split("-");
+          return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : date;
+        }),
+        series: [
+          {
+            name: "Dữ liệu Public",
+            data: uniqueDates.map((date) => getDailyTotal(date)),
+          },
+        ],
+      };
+    }
+  }, [data, mode]);
 
   const options = useMemo(
     () => ({
@@ -467,27 +486,29 @@ export const PeakHourChart = memo(({ data = [] }) => {
       colors: ["#3b82f6", "#f59e0b", "#10b981"],
       plotOptions: {
         bar: {
-          columnWidth: "50%", // Tăng độ rộng cột để trông không bị gầy
+          columnWidth: "50%",
           borderRadius: 4,
           dataLabels: {
-            position: 'top',
+            position: "top",
           },
         },
       },
       stroke: { show: true, width: 2, colors: ["transparent"] },
       dataLabels: {
-        enabled: true, // Bật để thấy số lượng kể cả khi cột thấp
+        enabled: true,
         offsetY: -20,
         style: {
           fontSize: "10px",
           fontWeight: "bold",
-          colors: ["#64748b"]
+          colors: ["#64748b"],
         },
-        formatter: (val) => val > 0 ? val : "" // Chỉ hiện số nếu > 0
+        formatter: (val) => (val > 0 ? val : ""),
       },
       xaxis: {
         categories: processedData.categories,
-        labels: { style: { colors: "#94a3b8", fontSize: "10px", fontWeight: 600 } },
+        labels: {
+          style: { colors: "#94a3b8", fontSize: "10px", fontWeight: 600 },
+        },
       },
       yaxis: {
         labels: {
@@ -504,7 +525,7 @@ export const PeakHourChart = memo(({ data = [] }) => {
         theme: "light",
       },
     }),
-    [processedData]
+    [processedData],
   );
 
   if (!data?.length) {
@@ -514,23 +535,25 @@ export const PeakHourChart = memo(({ data = [] }) => {
   return (
     <div className="w-full h-full flex flex-col">
       <div className="flex justify-end gap-4 mb-4 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#3b82f6]"></span>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V2 - Trạng Nguyên Tiếng Việt (luyện +thi)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#f59e0b]"></span>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V5 - Trạng Nguyên Tiếng Việt (học)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#10b981]"></span>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">V6 - Trạng Nguyên Toán</span>
-        </div>
+        {mode === "internal" ? (
+          <>
+            <LegendItem color="bg-[#3b82f6]" label="V2 - Trạng Nguyên Tiếng Việt (luyện +thi)" />
+            <LegendItem color="bg-[#f59e0b]" label="V5 - Trạng Nguyên Tiếng Việt (học)" />
+            <LegendItem color="bg-[#10b981]" label="V6 - Trạng Nguyên Toán" />
+          </>
+        ) : (
+          <LegendItem color="bg-[#3b82f6]" label="Dữ liệu Public" />
+        )}
       </div>
 
       <div className="w-full flex-1">
         <div className="w-full h-full pb-4">
-          <ReactApexChart options={options} series={processedData.series} type="bar" height="100%" />
+          <ReactApexChart
+            options={options}
+            series={processedData.series}
+            type="bar"
+            height="100%"
+          />
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ import KBAnalysis from "../components/Dashboard/KBAnalysis";
 import RefusedQuestions from "../components/Dashboard/RefusedQuestions";
 import ChatSessionHistory from "../components/Dashboard/ChatSessionHistory";
 import KeywordAnalytics from "../components/Dashboard/KeywordAnalytics";
+import { useDashboardMode } from "../context/DashboardModeContext";
 import Skeleton from "react-loading-skeleton";
 import { MessageSquare, UserCheck, AlertCircle, Zap } from "lucide-react";
 import {
@@ -23,6 +24,7 @@ import {
 const Dashboard = () => {
   // eslint-disable-next-line no-unused-vars
   const { toggleSidebar } = useOutletContext();
+  const { mode } = useDashboardMode();
 
   // States quản lý lọc
   const [filterMode, setFilterMode] = useState("all");
@@ -212,7 +214,10 @@ const Dashboard = () => {
               <>
                 <KBAnalysis data={data.faqAnalysis} />
                 <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                  <PeakHourChart data={data.faqAnalysis.daily || []} />
+                  <PeakHourChart
+                    data={data.faqAnalysis.daily || []}
+                    mode={mode}
+                  />
                 </div>
               </>
             )}
@@ -220,15 +225,17 @@ const Dashboard = () => {
 
           {/* STATISTICS & KEYWORDS */}
           <div className="space-y-10">
-            {showSkeleton ? (
-              <div className="bg-white p-6 rounded-xl border">
-                <Skeleton height={250} />
-              </div>
-            ) : (
-              <UserStatistics
-                userData={data.userData}
-                totalSessionsAll={data.kpis?.kpis?.total_sessions || 0}
-              />
+            {mode === "internal" && (
+              showSkeleton ? (
+                <div className="bg-white p-6 rounded-xl border">
+                  <Skeleton height={250} />
+                </div>
+              ) : (
+                <UserStatistics
+                  userData={data.userData}
+                  totalSessionsAll={data.kpis?.kpis?.total_sessions || 0}
+                />
+              )
             )}
             {showSkeleton ? (
               <div className="bg-white p-6 rounded-xl border">

@@ -1,14 +1,26 @@
-import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import { useDashboardMode } from "../context/DashboardModeContext";
 
 const AdminLayout = () => {
+  const { mode } = useDashboardMode();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   // 1. Tạo state quản lý đóng/mở sidebar
   const [isOpen, setIsOpen] = useState(false);
 
   // 2. Hàm để toggle (đảo ngược trạng thái)
   const toggleSidebar = () => setIsOpen(!isOpen);
+
+  // Chặn truy cập các trang khác khi ở chế độ Public
+  useEffect(() => {
+    if (mode === "public" && location.pathname !== "/admin/dashboard") {
+      navigate("/admin/dashboard");
+    }
+  }, [mode, location.pathname, navigate]);
 
   return (
     <div className="flex h-screen bg-white overflow-hidden">

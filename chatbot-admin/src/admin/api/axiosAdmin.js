@@ -39,4 +39,20 @@ axiosClient.interceptors.response.use(
   },
 );
 
+// Axios client for public dashboard
+export const axiosPublic = axios.create({
+  baseURL: import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:8001/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true,
+  timeout: 60000,
+});
+
+// Reuse same response interceptor for public client if needed
+axiosPublic.interceptors.response.use(
+  (response) => response.data,
+  (error) => Promise.reject(error)
+);
+
 export default axiosClient;

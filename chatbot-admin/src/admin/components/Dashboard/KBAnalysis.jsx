@@ -56,19 +56,25 @@ const KBAnalysis = ({ data }) => {
   );
 
   const { chartSeries, chartLabels } = useMemo(() => {
-    const targetOrder = ['v2', 'v5', 'v6'];
+    const targetOrder = ["v2", "v5", "v6"];
     const series = [];
     const labels = [];
 
-    targetOrder.forEach(key => {
+    targetOrder.forEach((key) => {
       if (Object.prototype.hasOwnProperty.call(summary.by_version, key)) {
         series.push(Number(summary.by_version[key]));
         labels.push(`Version ${key}`);
       }
     });
 
+    // Nếu không có version (mode public), dùng tổng số lượng
+    if (series.length === 0 && summary.total > 0) {
+      series.push(summary.total);
+      labels.push("Dữ liệu Public");
+    }
+
     return { chartSeries: series, chartLabels: labels };
-  }, [summary.by_version]);
+  }, [summary.by_version, summary.total]);
 
   const chartOptions = useMemo(
     () => ({
