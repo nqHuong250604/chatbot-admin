@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useMemo } from "react";
 import {
   Calendar,
   Wrench,
@@ -10,6 +10,14 @@ import {
 import EmptyState from "./EmptyState";
 
 const RefusedQuestions = memo(({ questions = [] }) => {
+  const sortedQuestions = useMemo(() => {
+    return [...questions].sort((a, b) => {
+      const dateA = a.date_vn || "";
+      const dateB = b.date_vn || "";
+      return dateB.localeCompare(dateA);
+    });
+  }, [questions]);
+
   const today = new Date().toLocaleDateString("vi-VN", {
     day: "2-digit",
     month: "2-digit",
@@ -53,7 +61,7 @@ const RefusedQuestions = memo(({ questions = [] }) => {
           </div>
 
           <div className="divide-y divide-slate-50 max-h-[400px] overflow-y-auto">
-            {questions.map((item, idx) => {
+            {sortedQuestions.map((item, idx) => {
               const qText = typeof item === "string" ? item : item.question;
               const qDate = item.date_vn || today;
               return (
