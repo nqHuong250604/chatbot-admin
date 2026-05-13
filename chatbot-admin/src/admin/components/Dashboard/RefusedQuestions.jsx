@@ -21,6 +21,7 @@ const RefusedQuestions = memo(({ questions = [] }) => {
   const today = new Date().toLocaleDateString("vi-VN", {
     day: "2-digit",
     month: "2-digit",
+    year: "numeric",
   });
 
   return (
@@ -63,7 +64,10 @@ const RefusedQuestions = memo(({ questions = [] }) => {
           <div className="divide-y divide-slate-50 max-h-[400px] overflow-y-auto">
             {sortedQuestions.map((item, idx) => {
               const qText = typeof item === "string" ? item : item.question;
-              const qDate = item.date_vn || today;
+              const qDateRaw = item.date_vn || "";
+              const qDate = qDateRaw.includes("-")
+                ? qDateRaw.split("-").reverse().join("/")
+                : qDateRaw || today;
               return (
                 <div
                   key={idx}
