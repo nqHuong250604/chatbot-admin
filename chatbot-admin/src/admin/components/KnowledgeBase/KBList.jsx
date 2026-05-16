@@ -129,20 +129,22 @@ const KBList = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <select
-                className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 text-sm focus:ring-4 focus:ring-blue-500/10 outline-none cursor-pointer shadow-sm"
-                value={filterVersion}
-                onChange={(e) => setFilterVersion(e.target.value)}
-              >
-                <option value="v2">V2 - Trạng Nguyên Tiếng Việt (luyện +thi)</option>
-                <option value="v5">V5 - Trạng Nguyên Tiếng Việt (học)</option>
-                <option value="v6">V6 - Trạng Nguyên Toán</option>
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <Search size={14} />
+            {mode === "internal" && (
+              <div className="relative">
+                <select
+                  className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 text-sm focus:ring-4 focus:ring-blue-500/10 outline-none cursor-pointer shadow-sm"
+                  value={filterVersion}
+                  onChange={(e) => setFilterVersion(e.target.value)}
+                >
+                  <option value="v2">V2 - Trạng Nguyên Tiếng Việt (luyện +thi)</option>
+                  <option value="v5">V5 - Trạng Nguyên Tiếng Việt (học)</option>
+                  <option value="v6">V6 - Trạng Nguyên Toán</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <Search size={14} />
+                </div>
               </div>
-            </div>
+            )}
             <button
               onClick={fetchData}
               className="p-2.5 bg-white border border-slate-200 rounded-xl hover:text-blue-600 transition-all shadow-sm cursor-pointer"
@@ -158,7 +160,7 @@ const KBList = () => {
             <thead className="bg-slate-50/50">
               <tr>
                 <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">ID</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">Phiên bản</th>
+                {mode === "internal" && <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">Phiên bản</th>}
                 <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">Nội dung</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100 text-right">Thao tác</th>
               </tr>
@@ -168,11 +170,13 @@ const KBList = () => {
                 currentTableData.map((item) => (
                   <tr key={item.id} className="group hover:bg-blue-50/30 transition-colors">
                     <td className="px-6 py-4 font-mono text-[11px] text-slate-400 align-top">#{item.id}</td>
-                    <td className="px-6 py-4 align-top">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase border border-blue-100">
-                        {item.version || "v2"}
-                      </span>
-                    </td>
+                    {mode === "internal" && (
+                      <td className="px-6 py-4 align-top">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase border border-blue-100">
+                          {item.version || "v2"}
+                        </span>
+                      </td>
+                    )}
                     <td
                       className="px-6 py-4 text-slate-600 text-sm max-w-[500px] cursor-pointer align-top"
                       onClick={() => toggleExpand(item.id)}
@@ -196,7 +200,7 @@ const KBList = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="py-20 text-center text-slate-400 italic">Không có dữ liệu.</td>
+                  <td colSpan={mode === "internal" ? 4 : 3} className="py-20 text-center text-slate-400 italic">Không có dữ liệu.</td>
                 </tr>
               )}
             </tbody>
@@ -228,8 +232,8 @@ const KBList = () => {
                       <button
                         onClick={() => setCurrentPage(page)}
                         className={`w-8 h-8 rounded-xl text-[11px] font-black transition-all cursor-pointer border ${currentPage === page
-                            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
-                            : "bg-white border-slate-200 text-slate-500 hover:border-blue-300"
+                          ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
+                          : "bg-white border-slate-200 text-slate-500 hover:border-blue-300"
                           }`}
                       >
                         {page}

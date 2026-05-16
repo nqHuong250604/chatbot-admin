@@ -42,7 +42,7 @@ const SingleAdd = () => {
       console.error("SingleAdd Error:", error);
       toast.error(
         error.response?.data?.message ||
-          "Gửi dữ liệu thất bại, vui lòng thử lại!",
+        "Gửi dữ liệu thất bại, vui lòng thử lại!",
       );
     } finally {
       setLoading(false);
@@ -70,19 +70,35 @@ const SingleAdd = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-100">
         <div className="space-y-2">
-          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">
-            Phiên bản (Bắt buộc)
-          </label>
-          <select
-            name="version"
-            className="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-            value={formData.version}
-            onChange={handleChange}
-          >
-            <option value="v2">V2 - Trạng Nguyên Tiếng Việt (luyện +thi)</option>
-            <option value="v5">V5 - Trạng Nguyên Tiếng Việt (học)</option>
-            <option value="v6">V6 - Trạng Nguyên Toán</option>
-          </select>
+          {mode === "internal" ? (
+            <>
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                Phiên bản (Bắt buộc)
+              </label>
+              <select
+                name="version"
+                className="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                value={formData.version}
+                onChange={handleChange}
+              >
+                <option value="v2">V2 - Trạng Nguyên Tiếng Việt (luyện +thi)</option>
+                <option value="v5">V5 - Trạng Nguyên Tiếng Việt (học)</option>
+                <option value="v6">V6 - Trạng Nguyên Toán</option>
+              </select>
+            </>
+          ) : (
+            <>
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                Tiêu đề (Tuỳ chọn)
+              </label>
+              <input
+                name="version"
+                className="w-full p-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                placeholder="Ví dụ: FAQ Public"
+                onChange={handleChange}
+              />
+            </>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -128,11 +144,10 @@ const SingleAdd = () => {
       <button
         onClick={handleSubmit}
         disabled={loading}
-        className={`w-full py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg ${
-          loading
-            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-            : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100 active:scale-[0.98]"
-        }`}
+        className={`w-full py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg ${loading
+          ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+          : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100 active:scale-[0.98]"
+          }`}
       >
         <Send size={18} />
         {loading ? "Đang xử lý..." : "Gửi sang n8n xử lý"}
