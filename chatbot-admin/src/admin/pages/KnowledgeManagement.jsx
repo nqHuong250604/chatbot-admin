@@ -1,9 +1,11 @@
 import React from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
+import { useDashboardMode } from "../context/DashboardModeContext";
 
 const KnowledgeManagement = () => {
   const location = useLocation();
+  const { mode } = useDashboardMode();
 
   const tabs = [
     {
@@ -51,16 +53,18 @@ const KnowledgeManagement = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl flex items-center gap-3">
-              <span className="text-blue-700 text-[11px] font-bold uppercase tracking-wider">
+            <div className={`border p-4 rounded-xl flex items-center gap-3 ${mode === "public" ? "bg-amber-50/50 border-amber-100" : "bg-blue-50/50 border-blue-100"}`}>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${mode === "public" ? "text-amber-700" : "text-blue-700"}`}>
                 Bảng KB hiện dùng:{" "}
-                <span className="text-blue-900 ml-1 font-black">DOCUMENTS</span>
+                <span className={`ml-1 font-black ${mode === "public" ? "text-amber-900" : "text-blue-900"}`}>
+                  DOCUMENTS ({mode.toUpperCase()})
+                </span>
               </span>
             </div>
-            <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-emerald-700 text-[11px] font-bold uppercase tracking-wider">
-                Webhook n8n đã cấu hình
+            <div className={`border p-4 rounded-xl flex items-center gap-3 ${mode === "public" ? "bg-amber-50/50 border-amber-100" : "bg-emerald-50/50 border-emerald-100"}`}>
+              <div className={`w-2 h-2 rounded-full animate-pulse ${mode === "public" ? "bg-amber-500" : "bg-emerald-500"}`} />
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${mode === "public" ? "text-amber-700" : "text-emerald-700"}`}>
+                Webhook n8n đã cấu hình ({mode.toUpperCase()})
               </span>
             </div>
           </div>

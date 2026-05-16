@@ -15,9 +15,13 @@ const AdminLayout = () => {
   // 2. Hàm để toggle (đảo ngược trạng thái)
   const toggleSidebar = () => setIsOpen(!isOpen);
 
-  // Chặn truy cập các trang khác khi ở chế độ Public
+  // Chặn truy cập các trang khác khi ở chế độ Public, ngoại trừ dashboard và knowledge-base
   useEffect(() => {
-    if (mode === "public" && location.pathname !== "/admin/dashboard") {
+    if (
+      mode === "public" &&
+      location.pathname !== "/admin/dashboard" &&
+      !location.pathname.startsWith("/admin/knowledge-base")
+    ) {
       navigate("/admin/dashboard");
     }
   }, [mode, location.pathname, navigate]);
