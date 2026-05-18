@@ -16,7 +16,7 @@ const FileImport = () => {
     setUploading(true);
     try {
       const res = await kbService.uploadFile(file, version, department, mode);
-      toast.success(res.data.message || "File đã được gửi sang n8n!");
+      toast.success(res.message || "File đã được gửi sang n8n!");
       setFile(null);
     } catch {
       toast.error("Lỗi khi tải file lên hệ thống!");

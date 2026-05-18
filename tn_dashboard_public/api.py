@@ -36,6 +36,7 @@ from analytics import (
     build_daily_from_qa,
     build_faq_pairs,
     build_daily_from_faq,
+    build_missing_question_groups,
     build_hour_dist,
     build_keywords,
     get_kpis,
@@ -52,20 +53,14 @@ app = FastAPI(
     version="1.1.0",
 )
 
-CORS_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "CORS_ORIGINS",
-        "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000,http://localhost:8000,http://localhost:8001",
-    ).split(",")
-    if origin.strip()
-]
+cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -589,10 +584,12 @@ def api_faq(
             "summary": {"total": 0, "answered": 0, "refused": 0, "error": 0, "answer_rate": 0},
             "daily"  : [],
             "missing": [],
+            "missing_groups": [],
         }
 
     missing = faq[~faq["answered"]][["date_vn", "question", "tool_name", "result"]].copy()
     missing["date_vn"] = missing["date_vn"].astype(str)
+    missing_groups = build_missing_question_groups(missing)
 
     return {
         "summary": {
@@ -602,8 +599,9 @@ def api_faq(
             "error"      : int((faq["result"] == "error").sum()),
             "answer_rate": round(faq["answered"].mean() * 100, 1),
         },
-        "daily"  : safe_records(daily_faq),
-        "missing": safe_records(missing),
+        "daily"          : safe_records(daily_faq),
+        "missing"        : safe_records(missing),
+        "missing_groups" : safe_records(missing_groups),
     }
 
 

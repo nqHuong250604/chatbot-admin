@@ -253,7 +253,13 @@ const Dashboard = () => {
                 <Skeleton height={200} />
               </div>
             ) : (
-              <RefusedQuestions questions={data.faqAnalysis.missing || []} />
+              <RefusedQuestions
+                questions={
+                  mode === "public"
+                    ? data.faqAnalysis.missing_groups || []
+                    : data.faqAnalysis.missing || []
+                }
+              />
             )}
             {/* {showSkeleton ? (
               <div className="bg-white p-6 rounded-xl border">

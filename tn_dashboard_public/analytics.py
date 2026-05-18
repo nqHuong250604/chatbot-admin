@@ -6,7 +6,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import unicodedata
 from datetime import datetime, timezone, timedelta
+from difflib import SequenceMatcher
 from typing import Any
 
 import pandas as pd
@@ -416,6 +418,120 @@ def build_daily_from_faq(faq_df: pd.DataFrame) -> pd.DataFrame:
     daily['not_answered'] = daily['total_faq'] - daily['answered']
     daily['answer_rate']  = (daily['answered'] / daily['total_faq'] * 100).round(1)
     return daily.sort_values('date_vn').reset_index(drop=True)
+
+
+def _normalize_question_for_grouping(question: str) -> str:
+    text = str(question or "").strip().lower()
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _question_tokens(question: str) -> set[str]:
+    stopwords = {
+        "toi", "ban", "cho", "hoi", "giup", "duoc", "khong", "co", "la", "ve",
+        "cua", "nhu", "the", "nao", "o", "tai", "trong", "va", "hay", "can",
+        "muon", "minh", "em", "anh", "chi", "a", "nhe",
+    }
+    return {
+        token
+        for token in _normalize_question_for_grouping(question).split()
+        if len(token) >= 2 and token not in stopwords
+    }
+
+
+def _question_similarity(left: str, right: str) -> float:
+    left_norm = _normalize_question_for_grouping(left)
+    right_norm = _normalize_question_for_grouping(right)
+    if not left_norm or not right_norm:
+        return 0.0
+    if left_norm == right_norm:
+        return 1.0
+
+    left_tokens = _question_tokens(left_norm)
+    right_tokens = _question_tokens(right_norm)
+    token_score = 0.0
+    if left_tokens and right_tokens:
+        token_score = len(left_tokens & right_tokens) / len(left_tokens | right_tokens)
+
+    sequence_score = SequenceMatcher(None, left_norm, right_norm).ratio()
+    return max(token_score, sequence_score)
+
+
+def build_missing_question_groups(
+    missing_df: pd.DataFrame,
+    similarity_threshold: float = 0.72,
+    max_examples: int = 5,
+) -> pd.DataFrame:
+    """Group unanswered questions into similar clusters for easier review."""
+    if missing_df.empty or "question" not in missing_df.columns:
+        return pd.DataFrame()
+
+    rows = missing_df.copy()
+    rows["question"] = rows["question"].fillna("").astype(str).str.strip()
+    rows = rows[rows["question"].astype(bool)]
+    if rows.empty:
+        return pd.DataFrame()
+
+    clusters: list[dict[str, Any]] = []
+    for _, row in rows.sort_values("date_vn").iterrows():
+        question = str(row["question"]).strip()
+        best_cluster = None
+        best_score = 0.0
+
+        for cluster in clusters:
+            score = _question_similarity(question, cluster["representative_question"])
+            if score > best_score:
+                best_score = score
+                best_cluster = cluster
+
+        if best_cluster is not None and best_score >= similarity_threshold:
+            best_cluster["rows"].append(row.to_dict())
+            best_cluster["questions"].append(question)
+            if len(question) < len(best_cluster["representative_question"]):
+                best_cluster["representative_question"] = question
+            continue
+
+        clusters.append(
+            {
+                "representative_question": question,
+                "questions": [question],
+                "rows": [row.to_dict()],
+            }
+        )
+
+    grouped_rows = []
+    for index, cluster in enumerate(clusters, start=1):
+        cluster_rows = cluster["rows"]
+        questions = cluster["questions"]
+        unique_questions = list(dict.fromkeys(questions))
+        dates = [item.get("date_vn") for item in cluster_rows if item.get("date_vn") is not None]
+        results = pd.Series([item.get("result") for item in cluster_rows]).value_counts().to_dict()
+        tools = pd.Series([item.get("tool_name") for item in cluster_rows]).dropna().astype(str)
+
+        grouped_rows.append(
+            {
+                "cluster_id": index,
+                "representative_question": cluster["representative_question"],
+                "count": len(questions),
+                "unique_count": len(unique_questions),
+                "examples": unique_questions[:max_examples],
+                "first_seen": min(dates) if dates else None,
+                "last_seen": max(dates) if dates else None,
+                "result_counts": results,
+                "tool_names": tools.drop_duplicates().tolist(),
+            }
+        )
+
+    grouped = pd.DataFrame(grouped_rows)
+    if grouped.empty:
+        return grouped
+    return grouped.sort_values(
+        ["count", "unique_count", "representative_question"],
+        ascending=[False, False, True],
+    ).reset_index(drop=True)
 
 
 def build_daily_from_qa(qa_df: pd.DataFrame) -> pd.DataFrame:
